@@ -85,8 +85,24 @@ export type SplitDirection = 'horizontal' | 'vertical'
 
 export interface Pane {
   id: string
+  name: string
   sessionIds: string[]
   activeSessionId: string | null
+}
+
+export interface MinimizedPane {
+  paneId: string
+  siblingPaneId: string | null
+  direction: SplitDirection
+  paneWasFirst: boolean
+}
+
+export interface WorkspaceState {
+  version: 1
+  panes: Pane[]
+  splitLayout: SplitNode | null
+  focusedPaneId: string | null
+  minimizedPanes: MinimizedPane[]
 }
 
 export interface SplitLeaf {

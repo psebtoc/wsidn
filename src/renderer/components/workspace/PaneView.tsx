@@ -21,6 +21,7 @@ interface PaneViewProps {
   onSetActiveSession: (sessionId: string) => void
   onSplit: (direction: SplitDirection) => void
   onClosePane: () => void
+  onMinimize?: () => void
   onCreateSessionWithCommand?: (command: string) => void
   onCreateWorktreeSession?: (branchName: string) => void
   closedClaudeSessions?: Session[]
@@ -37,6 +38,7 @@ export default function PaneView({
   onSetActiveSession,
   onSplit,
   onClosePane,
+  onMinimize,
   onCreateSessionWithCommand,
   onCreateWorktreeSession,
   closedClaudeSessions = []
@@ -402,6 +404,22 @@ export default function PaneView({
               </svg>
             </button>
           </Tooltip>
+          {isSplit && onMinimize && (
+            <Tooltip content="Minimize pane" side="bottom">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onMinimize()
+                }}
+                className="flex items-center justify-center w-6 h-6 rounded text-neutral-500
+                           hover:text-yellow-400 hover:bg-neutral-700/50 transition-colors"
+              >
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M5 12h14" />
+                </svg>
+              </button>
+            </Tooltip>
+          )}
           {isSplit && (
             <Tooltip content="Close pane" side="bottom">
               <button

@@ -3,6 +3,7 @@ import { useProjectStore } from '@renderer/stores/project-store'
 import { useSessionStore } from '@renderer/stores/session-store'
 import { sessionService } from '@renderer/services/session-service'
 import PaneView from './PaneView'
+import PaneStatusBar from './PaneStatusBar'
 import ActivityRibbon, { PANELS, type PanelId } from './ActivityRibbon'
 import SessionPanel from '@renderer/components/session/SessionPanel'
 import TemplatePanel from '@renderer/components/template/TemplatePanel'
@@ -27,6 +28,7 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
   const panes = useSessionStore((s) => s.panes)
   const splitLayout = useSessionStore((s) => s.splitLayout)
   const focusedPaneId = useSessionStore((s) => s.focusedPaneId)
+  const minimizedPanes = useSessionStore((s) => s.minimizedPanes)
   const loadSessions = useSessionStore((s) => s.loadSessions)
   const createFirstSession = useSessionStore((s) => s.createFirstSession)
   const createSessionInPane = useSessionStore((s) => s.createSessionInPane)
@@ -40,6 +42,8 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
   const loadOtherProjectSessions = useSessionStore((s) => s.loadOtherProjectSessions)
   const createSessionInPaneWithCommand = useSessionStore((s) => s.createSessionInPaneWithCommand)
   const createWorktreeSessionInPane = useSessionStore((s) => s.createWorktreeSessionInPane)
+  const minimizePane = useSessionStore((s) => s.minimizePane)
+  const restorePane = useSessionStore((s) => s.restorePane)
 
   const [activePanel, setActivePanel] = useState<PanelId | null>(null)
   const [dragState, setDragState] = useState<DragState | null>(null)
@@ -60,6 +64,16 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
       handleClaudeSessionEvent(event)
     })
   }, [handleClaudeSessionEvent])
+
+  // Visible panes = those not minimized
+  const minimizedPaneIds = useMemo(
+    () => new Set(minimizedPanes.map((m) => m.paneId)),
+    [minimizedPanes]
+  )
+  const visiblePanes = useMemo(
+    () => panes.filter((p) => !minimizedPaneIds.has(p.id)),
+    [panes, minimizedPaneIds]
+  )
 
   // Focused session = active session of the focused pane
   const focusedPane = panes.find((p) => p.id === focusedPaneId)
@@ -110,7 +124,7 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
     [sessions]
   )
 
-  const isSplit = panes.length > 1
+  const isSplit = visiblePanes.length > 1 || minimizedPanes.length > 0
 
   // Drag resize handlers
   const handleDividerMouseDown = useCallback(
@@ -215,7 +229,7 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
         )}
 
         <div ref={containerRef} className="flex-1 relative bg-neutral-950">
-          {panes.length === 0 ? (
+          {visiblePanes.length === 0 && panes.length === 0 ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
                 <p className="text-neutral-500 text-sm mb-3">No active sessions</p>
@@ -228,9 +242,16 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
                 </button>
               </div>
             </div>
+          ) : visiblePanes.length === 0 ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <p className="text-neutral-500 text-sm mb-3">All panes minimized</p>
+                <p className="text-neutral-600 text-xs">Restore a pane from the status bar below</p>
+              </div>
+            </div>
           ) : (
             <>
-              {panes.map((pane) => {
+              {visiblePanes.map((pane) => {
                 const bounds = paneBoundsMap?.get(pane.id)
 
                 return (
@@ -262,6 +283,7 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
                         splitPane(dir, projectId, project.path)
                       }}
                       onClosePane={() => closePane(pane.id)}
+                      onMinimize={() => minimizePane(pane.id)}
                       onCreateSessionWithCommand={(cmd) =>
                         createSessionInPaneWithCommand(pane.id, projectId, project.path, cmd)
                       }
@@ -321,6 +343,13 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
             </>
           )}
         </div>
+
+        {/* Pane status bar at bottom */}
+        <PaneStatusBar
+          panes={panes}
+          minimizedPanes={minimizedPanes}
+          onRestore={restorePane}
+        />
       </div>
     </div>
   )

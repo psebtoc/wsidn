@@ -118,6 +118,46 @@ export function removePane(node: SplitNode, paneId: string): SplitNode | null {
 }
 
 /**
+ * Find a pane's position in the split tree: its sibling, direction, and whether
+ * the pane was the first (left/top) or second (right/bottom) child.
+ * Returns null if the pane is not found or is the root.
+ */
+export interface PanePosition {
+  siblingPaneId: string | null
+  direction: SplitDirection
+  paneWasFirst: boolean
+}
+
+export function findPanePosition(
+  node: SplitNode,
+  paneId: string
+): PanePosition | null {
+  if (node.type === 'leaf') return null
+
+  // Check if the target pane is a direct child of this branch
+  const firstIds = node.first.type === 'leaf' ? [node.first.paneId] : getPaneIds(node.first)
+  const secondIds = node.second.type === 'leaf' ? [node.second.paneId] : getPaneIds(node.second)
+
+  if (node.first.type === 'leaf' && node.first.paneId === paneId) {
+    // Pane is the first child — sibling is the first leaf of the second subtree
+    const siblingId = node.second.type === 'leaf' ? node.second.paneId : getPaneIds(node.second)[0] ?? null
+    return { siblingPaneId: siblingId, direction: node.direction, paneWasFirst: true }
+  }
+
+  if (node.second.type === 'leaf' && node.second.paneId === paneId) {
+    // Pane is the second child — sibling is the first leaf of the first subtree
+    const siblingId = node.first.type === 'leaf' ? node.first.paneId : getPaneIds(node.first)[0] ?? null
+    return { siblingPaneId: siblingId, direction: node.direction, paneWasFirst: false }
+  }
+
+  // Recurse into children
+  if (firstIds.includes(paneId)) return findPanePosition(node.first, paneId)
+  if (secondIds.includes(paneId)) return findPanePosition(node.second, paneId)
+
+  return null
+}
+
+/**
  * Find the leaf with targetPaneId and replace it with a branch
  * containing the target and a new pane.
  */

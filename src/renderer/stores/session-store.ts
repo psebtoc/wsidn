@@ -1,7 +1,75 @@
 import { create } from 'zustand'
 import { sessionService } from '@renderer/services/session-service'
-import type { Session, Pane, SplitNode, SplitDirection, ClaudeSessionEvent, ClaudeActivity, ProjectSessions } from '@renderer/types/project'
-import { splitPaneNode, splitPaneNodeAt, removePane, getPaneIds, updateRatioAtPath } from '@renderer/utils/split-utils'
+import type {
+  Session,
+  Pane,
+  SplitNode,
+  SplitDirection,
+  ClaudeSessionEvent,
+  ClaudeActivity,
+  ProjectSessions,
+  MinimizedPane,
+  WorkspaceState
+} from '@renderer/types/project'
+import {
+  splitPaneNode,
+  splitPaneNodeAt,
+  removePane,
+  getPaneIds,
+  updateRatioAtPath,
+  findPanePosition
+} from '@renderer/utils/split-utils'
+
+// --- Pane name helper ---
+
+function nextPaneName(existingPanes: Pane[]): string {
+  const usedNumbers = new Set<number>()
+  for (const p of existingPanes) {
+    const m = /^Pane (\d+)$/.exec(p.name)
+    if (m) usedNumbers.add(Number(m[1]))
+  }
+  let n = 1
+  while (usedNumbers.has(n)) n++
+  return `Pane ${n}`
+}
+
+// --- Debounced workspace save ---
+
+let _saveTimer: ReturnType<typeof setTimeout> | null = null
+let _currentProjectId: string | null = null
+
+function _scheduleSave() {
+  if (_saveTimer) clearTimeout(_saveTimer)
+  _saveTimer = setTimeout(() => {
+    _flushSave()
+  }, 500)
+}
+
+function _flushSave() {
+  if (_saveTimer) {
+    clearTimeout(_saveTimer)
+    _saveTimer = null
+  }
+  const projectId = _currentProjectId
+  if (!projectId) return
+
+  const state = useSessionStore.getState()
+  const workspace: WorkspaceState = {
+    version: 1,
+    panes: state.panes,
+    splitLayout: state.splitLayout,
+    focusedPaneId: state.focusedPaneId,
+    minimizedPanes: state.minimizedPanes,
+  }
+  sessionService.saveWorkspace(projectId, workspace).catch(() => {})
+}
+
+// beforeunload flush
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    _flushSave()
+  })
+}
 
 interface SessionState {
   sessions: Session[]
@@ -10,6 +78,7 @@ interface SessionState {
   focusedPaneId: string | null
   claudeActivities: Record<string, ClaudeActivity>
   otherProjectSessions: ProjectSessions[]
+  minimizedPanes: MinimizedPane[]
 
   loadSessions: (projectId: string) => Promise<void>
   loadOtherProjectSessions: (currentProjectId: string) => Promise<void>
@@ -30,6 +99,11 @@ interface SessionState {
   closePane: (paneId: string) => Promise<void>
   focusPane: (paneId: string) => void
   updateSplitRatio: (path: string, ratio: number) => void
+  renamePane: (paneId: string, name: string) => void
+
+  // Minimize / restore
+  minimizePane: (paneId: string) => void
+  restorePane: (paneId: string) => void
 
   // Claude session binding
   handleClaudeSessionEvent: (event: ClaudeSessionEvent) => void
@@ -50,6 +124,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   focusedPaneId: null,
   claudeActivities: {},
   otherProjectSessions: [],
+  minimizedPanes: [],
 
   loadOtherProjectSessions: async (currentProjectId: string) => {
     try {
@@ -62,6 +137,8 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   },
 
   loadSessions: async (projectId: string) => {
+    _currentProjectId = projectId
+
     const diskSessions = await sessionService.list(projectId)
     const currentSessions = get().sessions
 
@@ -75,25 +152,117 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     })
 
     const activeSessions = sessions.filter((s) => s.status === 'active')
+    const activeIds = new Set(activeSessions.map((s) => s.id))
 
     if (activeSessions.length === 0) {
-      set({ sessions, panes: [], splitLayout: null, focusedPaneId: null })
+      set({ sessions, panes: [], splitLayout: null, focusedPaneId: null, minimizedPanes: [] })
       return
     }
 
-    // Create one pane with all active sessions as tabs
-    const paneId = crypto.randomUUID()
-    const pane: Pane = {
-      id: paneId,
-      sessionIds: activeSessions.map((s) => s.id),
-      activeSessionId: activeSessions[0]?.id ?? null,
+    // Try to load saved workspace
+    let workspace: WorkspaceState | null = null
+    try {
+      workspace = await sessionService.loadWorkspace(projectId)
+    } catch {
+      // ignore — fall through to default
     }
-    set({
-      sessions,
-      panes: [pane],
-      splitLayout: { type: 'leaf', paneId },
-      focusedPaneId: paneId,
-    })
+
+    if (workspace && workspace.version === 1 && workspace.panes.length > 0) {
+      // Restore from workspace: remove closed sessions, clean up empty panes
+      let panes = workspace.panes.map((p) => ({
+        ...p,
+        sessionIds: p.sessionIds.filter((id) => activeIds.has(id)),
+        activeSessionId: p.activeSessionId && activeIds.has(p.activeSessionId) ? p.activeSessionId : null,
+      }))
+
+      // Fix null activeSessionId
+      panes = panes.map((p) =>
+        p.activeSessionId ? p : { ...p, activeSessionId: p.sessionIds[0] ?? null }
+      )
+
+      // Find sessions not in any pane and add them to first pane
+      const assignedIds = new Set(panes.flatMap((p) => p.sessionIds))
+      const orphanIds = activeSessions.filter((s) => !assignedIds.has(s.id)).map((s) => s.id)
+
+      // Remove empty non-minimized panes from layout
+      const minimizedPaneIds = new Set((workspace.minimizedPanes ?? []).map((m) => m.paneId))
+      const emptyNonMinimized = panes.filter(
+        (p) => p.sessionIds.length === 0 && !minimizedPaneIds.has(p.id)
+      )
+
+      let layout = workspace.splitLayout
+      for (const ep of emptyNonMinimized) {
+        layout = layout ? removePane(layout, ep.id) : null
+      }
+      panes = panes.filter((p) => p.sessionIds.length > 0 || minimizedPaneIds.has(p.id))
+
+      // Also remove minimized panes that are empty
+      let minimizedPanes = (workspace.minimizedPanes ?? []).filter((m) => {
+        const pane = panes.find((p) => p.id === m.paneId)
+        return pane && pane.sessionIds.length > 0
+      })
+      panes = panes.filter((p) => p.sessionIds.length > 0)
+
+      // Add orphan sessions to the first visible pane
+      if (orphanIds.length > 0 && panes.length > 0) {
+        const firstPane = panes[0]
+        panes = panes.map((p) =>
+          p.id === firstPane.id
+            ? {
+                ...p,
+                sessionIds: [...p.sessionIds, ...orphanIds],
+                activeSessionId: p.activeSessionId ?? orphanIds[0],
+              }
+            : p
+        )
+      }
+
+      // Validate focusedPaneId
+      const visiblePaneIds = new Set(
+        panes.filter((p) => !minimizedPanes.some((m) => m.paneId === p.id)).map((p) => p.id)
+      )
+      let focusedPaneId = workspace.focusedPaneId
+      if (!focusedPaneId || !visiblePaneIds.has(focusedPaneId)) {
+        focusedPaneId = [...visiblePaneIds][0] ?? null
+      }
+
+      // Validate layout contains only existing pane ids
+      if (layout) {
+        const layoutPaneIds = new Set(getPaneIds(layout))
+        const existingVisible = panes.filter((p) => !minimizedPanes.some((m) => m.paneId === p.id))
+        const validLayoutPanes = existingVisible.filter((p) => layoutPaneIds.has(p.id))
+
+        if (validLayoutPanes.length === 0 && existingVisible.length > 0) {
+          // Layout doesn't match — rebuild as single leaf
+          layout = { type: 'leaf', paneId: existingVisible[0].id }
+        }
+      } else if (panes.length > 0) {
+        const firstVisible = panes.find((p) => !minimizedPanes.some((m) => m.paneId === p.id))
+        if (firstVisible) {
+          layout = { type: 'leaf', paneId: firstVisible.id }
+        }
+      }
+
+      set({ sessions, panes, splitLayout: layout, focusedPaneId, minimizedPanes })
+    } else {
+      // Default: create one pane with all active sessions as tabs
+      const paneId = crypto.randomUUID()
+      const pane: Pane = {
+        id: paneId,
+        name: 'Pane 1',
+        sessionIds: activeSessions.map((s) => s.id),
+        activeSessionId: activeSessions[0]?.id ?? null,
+      }
+      set({
+        sessions,
+        panes: [pane],
+        splitLayout: { type: 'leaf', paneId },
+        focusedPaneId: paneId,
+        minimizedPanes: [],
+      })
+    }
+
+    _scheduleSave()
   },
 
   reorderSession: (paneId, sessionId, toIndex) => {
@@ -104,6 +273,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       return { ...p, sessionIds: ids }
     })
     set({ panes: newPanes })
+    _scheduleSave()
   },
 
   moveSessionToPane: (sessionId, sourcePaneId, targetPaneId, toIndex) => {
@@ -128,14 +298,17 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       let layout = get().splitLayout
       layout = layout ? removePane(layout, sourcePaneId) : null
       panes = panes.filter((p) => p.sessionIds.length > 0)
+      // Also remove from minimizedPanes if it was there
+      const minimizedPanes = get().minimizedPanes.filter((m) => m.paneId !== sourcePaneId)
 
       let focusedPaneId = get().focusedPaneId
       if (focusedPaneId === sourcePaneId) focusedPaneId = targetPaneId
 
-      set({ panes, splitLayout: layout, focusedPaneId })
+      set({ panes, splitLayout: layout, focusedPaneId, minimizedPanes })
     } else {
       set({ panes, focusedPaneId: targetPaneId })
     }
+    _scheduleSave()
   },
 
   moveSessionToNewSplit: (sessionId, sourcePaneId, targetPaneId, direction, newPaneFirst) => {
@@ -160,6 +333,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     const newPaneId = crypto.randomUUID()
     const newPane: Pane = {
       id: newPaneId,
+      name: nextPaneName([...panes]),
       sessionIds: [sessionId],
       activeSessionId: sessionId,
     }
@@ -174,6 +348,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       splitLayout: layout,
       focusedPaneId: newPaneId,
     })
+    _scheduleSave()
   },
 
   createFirstSession: async (projectId, cwd) => {
@@ -181,6 +356,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     const paneId = crypto.randomUUID()
     const pane: Pane = {
       id: paneId,
+      name: 'Pane 1',
       sessionIds: [session.id],
       activeSessionId: session.id,
     }
@@ -190,6 +366,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       splitLayout: { type: 'leaf', paneId },
       focusedPaneId: paneId,
     })
+    _scheduleSave()
   },
 
   createSessionInPane: async (paneId, projectId, cwd) => {
@@ -207,6 +384,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       panes: newPanes,
       focusedPaneId: paneId,
     })
+    _scheduleSave()
   },
 
   closeSessionInPane: async (paneId, sessionId) => {
@@ -230,16 +408,19 @@ export const useSessionStore = create<SessionState>((set, get) => ({
         layout = layout ? removePane(layout, epId) : null
       }
       newPanes = newPanes.filter((p) => p.sessionIds.length > 0)
+      // Also clean up minimizedPanes
+      const minimizedPanes = get().minimizedPanes.filter((m) => !emptyPaneIds.includes(m.paneId))
 
       let focusedPaneId = get().focusedPaneId
       if (focusedPaneId && emptyPaneIds.includes(focusedPaneId)) {
         focusedPaneId = newPanes[0]?.id ?? null
       }
 
-      set({ sessions, panes: newPanes, splitLayout: layout, focusedPaneId })
+      set({ sessions, panes: newPanes, splitLayout: layout, focusedPaneId, minimizedPanes })
     } else {
       set({ sessions, panes: newPanes })
     }
+    _scheduleSave()
   },
 
   setActiveSessionInPane: (paneId, sessionId) => {
@@ -248,6 +429,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       return { ...p, activeSessionId: sessionId }
     })
     set({ panes: newPanes, focusedPaneId: paneId })
+    _scheduleSave()
   },
 
   splitPane: async (direction, projectId, cwd) => {
@@ -258,6 +440,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     const newPaneId = crypto.randomUUID()
     const newPane: Pane = {
       id: newPaneId,
+      name: nextPaneName(get().panes),
       sessionIds: [session.id],
       activeSessionId: session.id,
     }
@@ -270,6 +453,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       splitLayout: newLayout,
       focusedPaneId: newPaneId,
     })
+    _scheduleSave()
   },
 
   closePane: async (paneId) => {
@@ -283,6 +467,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     const closedSet = new Set(pane.sessionIds)
     const sessions = get().sessions.filter((s) => !closedSet.has(s.id))
     const panes = get().panes.filter((p) => p.id !== paneId)
+    const minimizedPanes = get().minimizedPanes.filter((m) => m.paneId !== paneId)
 
     let layout = get().splitLayout
     layout = layout ? removePane(layout, paneId) : null
@@ -292,17 +477,102 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       focusedPaneId = panes[0]?.id ?? null
     }
 
-    set({ sessions, panes, splitLayout: layout, focusedPaneId })
+    set({ sessions, panes, splitLayout: layout, focusedPaneId, minimizedPanes })
+    _scheduleSave()
   },
 
   focusPane: (paneId) => {
     set({ focusedPaneId: paneId })
+    _scheduleSave()
   },
 
   updateSplitRatio: (path, ratio) => {
     const layout = get().splitLayout
     if (!layout) return
     set({ splitLayout: updateRatioAtPath(layout, path, ratio) })
+    _scheduleSave()
+  },
+
+  renamePane: (paneId, name) => {
+    const trimmed = name.trim()
+    if (!trimmed) return
+    const panes = get().panes.map((p) => (p.id === paneId ? { ...p, name: trimmed } : p))
+    set({ panes })
+    _scheduleSave()
+  },
+
+  minimizePane: (paneId) => {
+    const { splitLayout, panes, minimizedPanes } = get()
+    if (!splitLayout) return
+
+    // Record position in tree
+    const pos = findPanePosition(splitLayout, paneId)
+    const entry: MinimizedPane = {
+      paneId,
+      siblingPaneId: pos?.siblingPaneId ?? null,
+      direction: pos?.direction ?? 'horizontal',
+      paneWasFirst: pos?.paneWasFirst ?? true,
+    }
+
+    // Remove from split tree
+    const newLayout = removePane(splitLayout, paneId)
+
+    // Update focusedPaneId if needed
+    let focusedPaneId = get().focusedPaneId
+    if (focusedPaneId === paneId) {
+      const visibleIds = newLayout ? getPaneIds(newLayout) : []
+      focusedPaneId = visibleIds[0] ?? null
+    }
+
+    set({
+      splitLayout: newLayout,
+      minimizedPanes: [...minimizedPanes, entry],
+      focusedPaneId,
+    })
+    _scheduleSave()
+  },
+
+  restorePane: (paneId) => {
+    const { splitLayout, panes, minimizedPanes } = get()
+    const entry = minimizedPanes.find((m) => m.paneId === paneId)
+    if (!entry) return
+
+    const newMinimized = minimizedPanes.filter((m) => m.paneId !== paneId)
+    let newLayout = splitLayout
+
+    if (!newLayout) {
+      // Tree is empty — set as root leaf
+      newLayout = { type: 'leaf', paneId }
+    } else if (
+      entry.siblingPaneId &&
+      getPaneIds(newLayout).includes(entry.siblingPaneId)
+    ) {
+      // Sibling still exists — insert next to it
+      newLayout = splitPaneNodeAt(
+        newLayout,
+        entry.siblingPaneId,
+        paneId,
+        entry.direction,
+        entry.paneWasFirst
+      )
+    } else {
+      // Sibling gone — insert at root
+      const rootLeaf: SplitNode = { type: 'leaf', paneId }
+      newLayout = {
+        type: 'branch',
+        direction: entry.direction,
+        ratio: 0.5,
+        first: entry.paneWasFirst ? rootLeaf : newLayout,
+        second: entry.paneWasFirst ? newLayout : rootLeaf,
+      }
+    }
+
+    set({
+      splitLayout: newLayout,
+      minimizedPanes: newMinimized,
+      focusedPaneId: paneId,
+    })
+    _scheduleSave()
   },
 
   handleClaudeSessionEvent: (event) => {
@@ -362,6 +632,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       panes: newPanes,
       focusedPaneId: paneId,
     })
+    _scheduleSave()
     // Wait for first PTY output (shell prompt ready) then send command
     const unsub = sessionService.onTerminalOutput((sid, _data) => {
       if (sid === session.id) {
@@ -390,6 +661,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       panes: newPanes,
       focusedPaneId: paneId,
     })
+    _scheduleSave()
     // Wait for first PTY output (shell prompt ready) then send command
     const unsub = sessionService.onTerminalOutput((sid, _data) => {
       if (sid === session.id) {

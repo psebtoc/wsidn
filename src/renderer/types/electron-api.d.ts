@@ -10,7 +10,8 @@ import type {
   CreateTemplateInput,
   UpdateTemplateInput,
   ClaudeSessionEvent,
-  ProjectSessions
+  ProjectSessions,
+  WorkspaceState
 } from './project'
 
 export interface WsidnAPI {
@@ -53,6 +54,10 @@ export interface WsidnAPI {
     create: (input: CreateTemplateInput) => Promise<IpcResult<PromptTemplate>>
     update: (input: UpdateTemplateInput) => Promise<IpcResult<PromptTemplate>>
     delete: (id: string) => Promise<IpcResult<boolean>>
+  }
+  workspace: {
+    load: (projectId: string) => Promise<IpcResult<WorkspaceState | null>>
+    save: (projectId: string, workspace: WorkspaceState) => Promise<IpcResult<boolean>>
   }
   claude: {
     onSessionEvent: (callback: (event: ClaudeSessionEvent) => void) => () => void

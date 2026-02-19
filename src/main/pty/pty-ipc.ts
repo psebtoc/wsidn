@@ -190,6 +190,34 @@ export function registerPtyIpc(): void {
     }
   )
 
+  // --- Workspace persistence ---
+
+  ipcMain.handle(
+    IPC_CHANNELS.WORKSPACE_LOAD,
+    (_event, { projectId }: { projectId: string }) => {
+      try {
+        const filePath = getAppDataPath('projects', projectId, 'workspace.json')
+        const data = readJson<unknown>(filePath, null as unknown as never)
+        return { success: true, data: data ?? null }
+      } catch {
+        return { success: true, data: null }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.WORKSPACE_SAVE,
+    (_event, { projectId, workspace }: { projectId: string; workspace: unknown }) => {
+      try {
+        const filePath = getAppDataPath('projects', projectId, 'workspace.json')
+        writeJson(filePath, workspace)
+        return { success: true, data: true }
+      } catch (err) {
+        return { success: false, error: String(err) }
+      }
+    }
+  )
+
   // --- one-way event handlers (send/on) ---
 
   ipcMain.on(

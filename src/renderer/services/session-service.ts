@@ -1,4 +1,5 @@
 import { unwrapIpc } from '@renderer/types/ipc'
+import type { WorkspaceState } from '@renderer/types/project'
 
 export const sessionService = {
   async create(projectId: string, cwd: string) {
@@ -18,6 +19,12 @@ export const sessionService = {
   },
   async createWorktree(projectId: string, cwd: string, branchName: string) {
     return unwrapIpc(await window.wsidn.session.createWorktree(projectId, cwd, branchName))
+  },
+  async loadWorkspace(projectId: string): Promise<WorkspaceState | null> {
+    return unwrapIpc(await window.wsidn.workspace.load(projectId))
+  },
+  async saveWorkspace(projectId: string, workspace: WorkspaceState) {
+    return unwrapIpc(await window.wsidn.workspace.save(projectId, workspace))
   },
   terminalInput(sessionId: string, data: string) {
     window.wsidn.terminal.input(sessionId, data)

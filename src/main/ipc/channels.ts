@@ -35,6 +35,10 @@ export const IPC_CHANNELS = {
   TEMPLATE_UPDATE: 'template:update',
   TEMPLATE_DELETE: 'template:delete',
 
+  // Workspace
+  WORKSPACE_LOAD: 'workspace:load',
+  WORKSPACE_SAVE: 'workspace:save',
+
   // Claude session binding (main → renderer, one-way)
   CLAUDE_SESSION_EVENT: 'claude:session-event',
 

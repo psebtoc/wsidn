@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import type { Session, Pane, ClaudeActivity, ProjectSessions } from '@renderer/types/project'
+import { useState, useRef, useEffect } from 'react'
+import type { Session, Pane, ClaudeActivity } from '@renderer/types/project'
 import { sessionService } from '@renderer/services/session-service'
 import { useSessionStore } from '@renderer/stores/session-store'
 
@@ -18,9 +18,11 @@ export default function SessionPanel({
 }: SessionPanelProps) {
   const claudeActivities = useSessionStore((s) => s.claudeActivities)
   const otherProjectSessions = useSessionStore((s) => s.otherProjectSessions)
+  const renamePane = useSessionStore((s) => s.renamePane)
   const activeSessions = sessions.filter((s) => s.status === 'active')
 
   const [collapsedPanes, setCollapsedPanes] = useState<Set<string>>(new Set())
+  const [editingPaneId, setEditingPaneId] = useState<string | null>(null)
 
   const toggleCollapse = (key: string) => {
     setCollapsedPanes((prev) => {
@@ -68,7 +70,7 @@ export default function SessionPanel({
         ) : (
           <>
             {/* Current project panes */}
-            {panes.map((pane, paneIdx) => {
+            {panes.map((pane) => {
               const paneSessions = pane.sessionIds
                 .map((id) => activeSessions.find((s) => s.id === id))
                 .filter(Boolean) as Session[]
@@ -80,13 +82,18 @@ export default function SessionPanel({
 
               return (
                 <div key={pane.id}>
-                  <button
-                    onClick={() => toggleCollapse(paneKey)}
-                    className="w-full text-[10px] font-medium text-neutral-500 uppercase tracking-wider px-2 py-1 flex items-center gap-1 hover:text-neutral-400 transition-colors"
-                  >
-                    <span className="text-[8px]">{isCollapsed ? '\u25B6' : '\u25BC'}</span>
-                    Pane {paneIdx + 1}
-                  </button>
+                  <PaneHeader
+                    pane={pane}
+                    isCollapsed={isCollapsed}
+                    isEditing={editingPaneId === pane.id}
+                    onToggleCollapse={() => toggleCollapse(paneKey)}
+                    onStartEdit={() => setEditingPaneId(pane.id)}
+                    onFinishEdit={(name) => {
+                      renamePane(pane.id, name)
+                      setEditingPaneId(null)
+                    }}
+                    onCancelEdit={() => setEditingPaneId(null)}
+                  />
                   {!isCollapsed &&
                     paneSessions.map((session) => (
                       <SessionCard
@@ -140,6 +147,70 @@ export default function SessionPanel({
         )}
       </div>
     </div>
+  )
+}
+
+/** Pane header with inline rename on double-click */
+function PaneHeader({
+  pane,
+  isCollapsed,
+  isEditing,
+  onToggleCollapse,
+  onStartEdit,
+  onFinishEdit,
+  onCancelEdit,
+}: {
+  pane: Pane
+  isCollapsed: boolean
+  isEditing: boolean
+  onToggleCollapse: () => void
+  onStartEdit: () => void
+  onFinishEdit: (name: string) => void
+  onCancelEdit: () => void
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [editValue, setEditValue] = useState(pane.name)
+
+  useEffect(() => {
+    if (isEditing) {
+      setEditValue(pane.name)
+      // Focus after render
+      requestAnimationFrame(() => inputRef.current?.select())
+    }
+  }, [isEditing, pane.name])
+
+  if (isEditing) {
+    return (
+      <div className="px-2 py-1">
+        <input
+          ref={inputRef}
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') onFinishEdit(editValue)
+            if (e.key === 'Escape') onCancelEdit()
+          }}
+          onBlur={() => onFinishEdit(editValue)}
+          className="w-full text-[10px] font-medium text-neutral-300 uppercase tracking-wider
+                     bg-neutral-800 border border-neutral-600 rounded px-1 py-0.5 outline-none
+                     focus:border-blue-500"
+        />
+      </div>
+    )
+  }
+
+  return (
+    <button
+      onClick={onToggleCollapse}
+      onDoubleClick={(e) => {
+        e.stopPropagation()
+        onStartEdit()
+      }}
+      className="w-full text-[10px] font-medium text-neutral-500 uppercase tracking-wider px-2 py-1 flex items-center gap-1 hover:text-neutral-400 transition-colors"
+    >
+      <span className="text-[8px]">{isCollapsed ? '\u25B6' : '\u25BC'}</span>
+      {pane.name}
+    </button>
   )
 }
 

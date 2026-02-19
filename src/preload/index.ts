@@ -69,6 +69,12 @@ contextBridge.exposeInMainWorld('wsidn', {
     delete: (id: string) => ipcRenderer.invoke('template:delete', { id })
   },
 
+  workspace: {
+    load: (projectId: string) => ipcRenderer.invoke('workspace:load', { projectId }),
+    save: (projectId: string, workspace: unknown) =>
+      ipcRenderer.invoke('workspace:save', { projectId, workspace })
+  },
+
   claude: {
     onSessionEvent: (
       callback: (event: {
