@@ -9,6 +9,9 @@ export const IPC_CHANNELS = {
   SESSION_CREATE: 'session:create',
   SESSION_CLOSE: 'session:close',
   SESSION_LIST: 'session:list',
+  SESSION_LIST_ALL: 'session:listAll',
+  SESSION_UPDATE_TITLE: 'session:updateTitle',
+  SESSION_CREATE_WORKTREE: 'session:createWorktree',
 
   // Project (request-response)
   PROJECT_CREATE: 'project:create',

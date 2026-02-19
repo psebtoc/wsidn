@@ -1,8 +1,11 @@
 import { ipcMain } from 'electron'
 import { existsSync, readdirSync } from 'fs'
+import { execSync } from 'child_process'
+import { join, basename } from 'path'
 import { v4 as uuid } from 'uuid'
 import { IPC_CHANNELS } from '@main/ipc/channels'
 import { getAppDataPath, readJson, writeJson } from '@main/storage/storage-manager'
+import { listProjects, getProject } from '@main/storage/project-storage'
 import { ptyManager } from './pty-manager'
 
 interface Session {
@@ -14,6 +17,7 @@ interface Session {
   createdAt: string
   claudeSessionId: string | null
   claudeModel: string | null
+  claudeLastTitle: string | null
 }
 
 function sessionsPath(projectId: string): string {
@@ -38,7 +42,8 @@ export function registerPtyIpc(): void {
           status: 'active',
           createdAt: new Date().toISOString(),
           claudeSessionId: null,
-          claudeModel: null
+          claudeModel: null,
+          claudeLastTitle: null
         }
 
         sessions.push(session)
@@ -88,6 +93,97 @@ export function registerPtyIpc(): void {
         const filePath = sessionsPath(projectId)
         const sessions = readJson<Session[]>(filePath, [])
         return { success: true, data: sessions }
+      } catch (err) {
+        return { success: false, error: String(err) }
+      }
+    }
+  )
+
+  ipcMain.handle(IPC_CHANNELS.SESSION_LIST_ALL, () => {
+    try {
+      const projects = listProjects()
+      const result: { project: { id: string; name: string }; sessions: Session[] }[] = []
+
+      for (const project of projects) {
+        const filePath = sessionsPath(project.id)
+        const sessions = readJson<Session[]>(filePath, [])
+        const activeSessions = sessions.filter((s) => s.status === 'active')
+        if (activeSessions.length > 0) {
+          result.push({
+            project: { id: project.id, name: project.name },
+            sessions: activeSessions,
+          })
+        }
+      }
+
+      return { success: true, data: result }
+    } catch (err) {
+      return { success: false, error: String(err) }
+    }
+  })
+
+  ipcMain.handle(
+    IPC_CHANNELS.SESSION_UPDATE_TITLE,
+    (_event, { sessionId, title }: { sessionId: string; title: string }) => {
+      try {
+        const projectsDir = getAppDataPath('projects')
+        if (existsSync(projectsDir)) {
+          for (const entry of readdirSync(projectsDir, { withFileTypes: true })) {
+            if (!entry.isDirectory()) continue
+            const filePath = getAppDataPath('projects', entry.name, 'sessions.json')
+            const sessions = readJson<Session[]>(filePath, [])
+            const session = sessions.find((s) => s.id === sessionId)
+            if (session) {
+              session.claudeLastTitle = title
+              writeJson(filePath, sessions)
+              break
+            }
+          }
+        }
+        return { success: true, data: true }
+      } catch (err) {
+        return { success: false, error: String(err) }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.SESSION_CREATE_WORKTREE,
+    (
+      _event,
+      { projectId, cwd, branchName }: { projectId: string; cwd: string; branchName: string }
+    ) => {
+      try {
+        const parentDir = join(cwd, '..')
+        const projectDirName = basename(cwd)
+        const worktreePath = join(parentDir, `${projectDirName}-${branchName}`)
+
+        execSync(`git worktree add "${worktreePath}" -b "${branchName}"`, { cwd })
+
+        const filePath = sessionsPath(projectId)
+        const sessions = readJson<Session[]>(filePath, [])
+
+        const session: Session = {
+          id: uuid(),
+          projectId,
+          name: `WT: ${branchName}`,
+          cwd: worktreePath,
+          status: 'active',
+          createdAt: new Date().toISOString(),
+          claudeSessionId: null,
+          claudeModel: null,
+          claudeLastTitle: null
+        }
+
+        sessions.push(session)
+        writeJson(filePath, sessions)
+        ptyManager.spawn(session.id, worktreePath)
+
+        // Read project's worktreeInitScript
+        const project = getProject(projectId)
+        const initScript = project?.worktreeInitScript ?? null
+
+        return { success: true, data: { session, worktreePath, initScript } }
       } catch (err) {
         return { success: false, error: String(err) }
       }

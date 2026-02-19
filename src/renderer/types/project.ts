@@ -3,6 +3,7 @@ export interface Project {
   name: string
   path: string
   createdAt: string
+  worktreeInitScript: string | null
 }
 
 export interface Session {
@@ -14,6 +15,7 @@ export interface Session {
   createdAt: string
   claudeSessionId: string | null
   claudeModel: string | null
+  claudeLastTitle: string | null
 }
 
 export interface ClaudeActivity {
@@ -28,6 +30,11 @@ export interface ClaudeSessionEvent {
   claudeSessionId: string | null
   source: ClaudeHookSource
   model: string
+}
+
+export interface ProjectSessions {
+  project: { id: string; name: string }
+  sessions: Session[]
 }
 
 export interface AppConfig {

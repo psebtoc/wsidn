@@ -9,7 +9,8 @@ import type {
   PromptTemplate,
   CreateTemplateInput,
   UpdateTemplateInput,
-  ClaudeSessionEvent
+  ClaudeSessionEvent,
+  ProjectSessions
 } from './project'
 
 export interface WsidnAPI {
@@ -23,6 +24,13 @@ export interface WsidnAPI {
     create: (projectId: string, cwd: string) => Promise<IpcResult<Session>>
     close: (sessionId: string) => Promise<IpcResult<boolean>>
     list: (projectId: string) => Promise<IpcResult<Session[]>>
+    listAll: () => Promise<IpcResult<ProjectSessions[]>>
+    updateTitle: (sessionId: string, title: string) => Promise<IpcResult<boolean>>
+    createWorktree: (
+      projectId: string,
+      cwd: string,
+      branchName: string
+    ) => Promise<IpcResult<{ session: Session; worktreePath: string; initScript: string | null }>>
   }
   config: {
     get: () => Promise<IpcResult<AppConfig>>

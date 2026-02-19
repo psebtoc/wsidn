@@ -5,6 +5,8 @@ import { useSessionStore } from '@renderer/stores/session-store'
 import Tooltip from '@renderer/components/ui/Tooltip'
 import TodoPanel from '@renderer/components/todo/TodoPanel'
 import TerminalPane from './TerminalPane'
+import SessionContextMenu from './SessionContextMenu'
+import WorktreeBranchDialog from './WorktreeBranchDialog'
 
 type DropEdge = 'top' | 'bottom' | 'left' | 'right' | null
 
@@ -19,6 +21,9 @@ interface PaneViewProps {
   onSetActiveSession: (sessionId: string) => void
   onSplit: (direction: SplitDirection) => void
   onClosePane: () => void
+  onCreateSessionWithCommand?: (command: string) => void
+  onCreateWorktreeSession?: (branchName: string) => void
+  closedClaudeSessions?: Session[]
 }
 
 export default function PaneView({
@@ -31,12 +36,18 @@ export default function PaneView({
   onCloseSession,
   onSetActiveSession,
   onSplit,
-  onClosePane
+  onClosePane,
+  onCreateSessionWithCommand,
+  onCreateWorktreeSession,
+  closedClaudeSessions = []
 }: PaneViewProps) {
   const [showTodo, setShowTodo] = useState(false)
   const [tabDropIndex, setTabDropIndex] = useState<number | null>(null)
   const [tabDropSide, setTabDropSide] = useState<'left' | 'right'>('left')
   const [dropEdge, setDropEdge] = useState<DropEdge>(null)
+  const [showContextMenu, setShowContextMenu] = useState(false)
+  const [contextMenuAnchor, setContextMenuAnchor] = useState<DOMRect | null>(null)
+  const [showWorktreeDialog, setShowWorktreeDialog] = useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
 
   const dragging = useDndStore((s) => s.dragging)
@@ -309,20 +320,39 @@ export default function PaneView({
 
         {/* Actions area */}
         <div className="flex items-center gap-0.5 px-1 shrink-0 border-b border-b-neutral-700">
-          <Tooltip content="New tab" side="bottom">
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                onCreateSession()
-              }}
-              className="flex items-center justify-center w-6 h-6 rounded text-neutral-500
-                         hover:text-neutral-300 hover:bg-neutral-700/50 transition-colors"
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-            </button>
-          </Tooltip>
+          {/* Split button: [+] [▾] */}
+          <div className="flex items-center">
+            <Tooltip content="New tab" side="bottom">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onCreateSession()
+                }}
+                className="flex items-center justify-center w-5 h-6 rounded-l text-neutral-500
+                           hover:text-neutral-300 hover:bg-neutral-700/50 transition-colors"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+              </button>
+            </Tooltip>
+            <Tooltip content="New session options" side="bottom">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  const rect = e.currentTarget.getBoundingClientRect()
+                  setContextMenuAnchor(rect)
+                  setShowContextMenu((v) => !v)
+                }}
+                className="flex items-center justify-center w-4 h-6 rounded-r text-neutral-500
+                           hover:text-neutral-300 hover:bg-neutral-700/50 transition-colors"
+              >
+                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
+              </button>
+            </Tooltip>
+          </div>
           <Tooltip content="Split right" side="bottom">
             <button
               onClick={(e) => {
@@ -432,6 +462,39 @@ export default function PaneView({
           )
         )}
       </div>
+
+      {/* Session context menu */}
+      {showContextMenu && contextMenuAnchor && (
+        <SessionContextMenu
+          anchor={contextMenuAnchor}
+          onClose={() => setShowContextMenu(false)}
+          onSelectClaude={() => onCreateSessionWithCommand?.('claude\n')}
+          onSelectClaudeDangerously={() => onCreateSessionWithCommand?.('claude --dangerously-skip-permissions\n')}
+          onSelectWorktree={() => setShowWorktreeDialog(true)}
+          resumableSessions={closedClaudeSessions
+            .filter((s): s is Session & { claudeSessionId: string } => !!s.claudeSessionId)
+            .map((s) => ({
+              id: s.id,
+              claudeSessionId: s.claudeSessionId,
+              claudeLastTitle: s.claudeLastTitle,
+              name: s.name,
+            }))}
+          onResume={(claudeSessionId) =>
+            onCreateSessionWithCommand?.(`claude --resume ${claudeSessionId}\n`)
+          }
+        />
+      )}
+
+      {/* Worktree branch dialog */}
+      {showWorktreeDialog && (
+        <WorktreeBranchDialog
+          onConfirm={(branchName) => {
+            setShowWorktreeDialog(false)
+            onCreateWorktreeSession?.(branchName)
+          }}
+          onCancel={() => setShowWorktreeDialog(false)}
+        />
+      )}
     </div>
   )
 }

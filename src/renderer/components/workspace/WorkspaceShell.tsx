@@ -37,6 +37,9 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
   const focusPaneFn = useSessionStore((s) => s.focusPane)
   const updateSplitRatio = useSessionStore((s) => s.updateSplitRatio)
   const handleClaudeSessionEvent = useSessionStore((s) => s.handleClaudeSessionEvent)
+  const loadOtherProjectSessions = useSessionStore((s) => s.loadOtherProjectSessions)
+  const createSessionInPaneWithCommand = useSessionStore((s) => s.createSessionInPaneWithCommand)
+  const createWorktreeSessionInPane = useSessionStore((s) => s.createWorktreeSessionInPane)
 
   const [activePanel, setActivePanel] = useState<PanelId | null>(null)
   const [dragState, setDragState] = useState<DragState | null>(null)
@@ -46,6 +49,10 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
   useEffect(() => {
     loadSessions(projectId)
   }, [projectId, loadSessions])
+
+  useEffect(() => {
+    loadOtherProjectSessions(projectId)
+  }, [projectId, loadOtherProjectSessions])
 
   // Subscribe to Claude session binding events
   useEffect(() => {
@@ -96,6 +103,12 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
     if (!splitLayout) return []
     return collectDividers(splitLayout)
   }, [splitLayout])
+
+  // Closed sessions that have a claudeSessionId — available for resume
+  const closedClaudeSessions = useMemo(
+    () => sessions.filter((s) => s.status === 'closed' && s.claudeSessionId),
+    [sessions]
+  )
 
   const isSplit = panes.length > 1
 
@@ -167,7 +180,7 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
         <SessionPanel
           sessions={sessions}
           panes={panes}
-          focusedPaneId={focusedPaneId}
+          projectId={projectId}
           onFocusSession={(paneId, sessionId) => {
             focusPaneFn(paneId)
             setActiveSessionInPane(paneId, sessionId)
@@ -249,6 +262,13 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
                         splitPane(dir, projectId, project.path)
                       }}
                       onClosePane={() => closePane(pane.id)}
+                      onCreateSessionWithCommand={(cmd) =>
+                        createSessionInPaneWithCommand(pane.id, projectId, project.path, cmd)
+                      }
+                      onCreateWorktreeSession={(branchName) =>
+                        createWorktreeSessionInPane(pane.id, projectId, project.path, branchName)
+                      }
+                      closedClaudeSessions={closedClaudeSessions}
                     />
                   </div>
                 )

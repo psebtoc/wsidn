@@ -5,6 +5,7 @@ import { WebLinksAddon } from '@xterm/addon-web-links'
 import '@xterm/xterm/css/xterm.css'
 import { parseClaudeTitle } from '@renderer/utils/claude-activity'
 import { useSessionStore } from '@renderer/stores/session-store'
+import { sessionService } from '@renderer/services/session-service'
 
 export function useTerminal(
   sessionId: string,
@@ -43,11 +44,20 @@ export function useTerminal(
       if (sid === sessionId) terminal.write(data)
     })
 
-    // OSC title change — parse Claude Code activity from title
+    // OSC title change — parse Claude Code activity from title + persist
+    let lastPersistedTitle = ''
     const onTitleDispose = terminal.onTitleChange((title) => {
       const activity = parseClaudeTitle(title)
       if (activity) {
         useSessionStore.getState().updateClaudeActivity(sessionId, activity)
+
+        // Persist title to disk, dedup by stripping spinner char
+        const taskText = activity.task
+        if (taskText && taskText !== lastPersistedTitle) {
+          lastPersistedTitle = taskText
+          sessionService.updateTitle(sessionId, taskText)
+          useSessionStore.getState().updateClaudeLastTitle(sessionId, taskText)
+        }
       }
     })
 

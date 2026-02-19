@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { sessionService } from '@renderer/services/session-service'
-import type { Session, Pane, SplitNode, SplitDirection, ClaudeSessionEvent, ClaudeActivity } from '@renderer/types/project'
+import type { Session, Pane, SplitNode, SplitDirection, ClaudeSessionEvent, ClaudeActivity, ProjectSessions } from '@renderer/types/project'
 import { splitPaneNode, splitPaneNodeAt, removePane, getPaneIds, updateRatioAtPath } from '@renderer/utils/split-utils'
 
 interface SessionState {
@@ -9,8 +9,10 @@ interface SessionState {
   splitLayout: SplitNode | null
   focusedPaneId: string | null
   claudeActivities: Record<string, ClaudeActivity>
+  otherProjectSessions: ProjectSessions[]
 
   loadSessions: (projectId: string) => Promise<void>
+  loadOtherProjectSessions: (currentProjectId: string) => Promise<void>
 
   // Session management within panes
   createSessionInPane: (paneId: string, projectId: string, cwd: string) => Promise<void>
@@ -34,6 +36,11 @@ interface SessionState {
 
   // Claude activity tracking
   updateClaudeActivity: (sessionId: string, activity: ClaudeActivity | null) => void
+  updateClaudeLastTitle: (sessionId: string, title: string) => void
+
+  // Session creation with command
+  createSessionInPaneWithCommand: (paneId: string, projectId: string, cwd: string, command: string) => Promise<void>
+  createWorktreeSessionInPane: (paneId: string, projectId: string, cwd: string, branchName: string) => Promise<void>
 }
 
 export const useSessionStore = create<SessionState>((set, get) => ({
@@ -42,6 +49,17 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   splitLayout: null,
   focusedPaneId: null,
   claudeActivities: {},
+  otherProjectSessions: [],
+
+  loadOtherProjectSessions: async (currentProjectId: string) => {
+    try {
+      const all = await sessionService.listAll()
+      const others = all.filter((ps) => ps.project.id !== currentProjectId)
+      set({ otherProjectSessions: others })
+    } catch {
+      set({ otherProjectSessions: [] })
+    }
+  },
 
   loadSessions: async (projectId: string) => {
     const diskSessions = await sessionService.list(projectId)
@@ -320,5 +338,67 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     } else {
       set({ claudeActivities: { ...prev, [sessionId]: activity } })
     }
+  },
+
+  updateClaudeLastTitle: (sessionId, title) => {
+    const sessions = get().sessions.map((s) =>
+      s.id === sessionId ? { ...s, claudeLastTitle: title } : s
+    )
+    set({ sessions })
+  },
+
+  createSessionInPaneWithCommand: async (paneId, projectId, cwd, command) => {
+    const session = await sessionService.create(projectId, cwd)
+    const newPanes = get().panes.map((p) => {
+      if (p.id !== paneId) return p
+      return {
+        ...p,
+        sessionIds: [...p.sessionIds, session.id],
+        activeSessionId: session.id,
+      }
+    })
+    set({
+      sessions: [...get().sessions, session],
+      panes: newPanes,
+      focusedPaneId: paneId,
+    })
+    // Wait for first PTY output (shell prompt ready) then send command
+    const unsub = sessionService.onTerminalOutput((sid, _data) => {
+      if (sid === session.id) {
+        unsub()
+        // Small extra delay to ensure prompt is fully rendered
+        setTimeout(() => {
+          sessionService.terminalInput(session.id, command)
+        }, 100)
+      }
+    })
+  },
+
+  createWorktreeSessionInPane: async (paneId, projectId, cwd, branchName) => {
+    const result = await sessionService.createWorktree(projectId, cwd, branchName)
+    const { session, initScript } = result
+    const newPanes = get().panes.map((p) => {
+      if (p.id !== paneId) return p
+      return {
+        ...p,
+        sessionIds: [...p.sessionIds, session.id],
+        activeSessionId: session.id,
+      }
+    })
+    set({
+      sessions: [...get().sessions, session],
+      panes: newPanes,
+      focusedPaneId: paneId,
+    })
+    // Wait for first PTY output (shell prompt ready) then send command
+    const unsub = sessionService.onTerminalOutput((sid, _data) => {
+      if (sid === session.id) {
+        unsub()
+        setTimeout(() => {
+          const cmd = initScript ? `${initScript} && claude\n` : 'claude\n'
+          sessionService.terminalInput(session.id, cmd)
+        }, 100)
+      }
+    })
   },
 }))

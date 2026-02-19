@@ -10,6 +10,15 @@ export const sessionService = {
   async list(projectId: string) {
     return unwrapIpc(await window.wsidn.session.list(projectId))
   },
+  async listAll() {
+    return unwrapIpc(await window.wsidn.session.listAll())
+  },
+  async updateTitle(sessionId: string, title: string) {
+    return unwrapIpc(await window.wsidn.session.updateTitle(sessionId, title))
+  },
+  async createWorktree(projectId: string, cwd: string, branchName: string) {
+    return unwrapIpc(await window.wsidn.session.createWorktree(projectId, cwd, branchName))
+  },
   terminalInput(sessionId: string, data: string) {
     window.wsidn.terminal.input(sessionId, data)
   },

@@ -78,6 +78,41 @@ Configured in both `tsconfig.json` (paths) and `electron.vite.config.ts` (resolv
 
 Defined in `src/renderer/types/project.ts`: `Project`, `Session`, `Todo` (session-scoped, with hierarchical `parentId`), `PromptTemplate` (global or project-scoped).
 
+### Session Fields
+
+- `claudeSessionId` — bound by hook-server when Claude Code starts (cleared on stop)
+- `claudeLastTitle` — last OSC title task text, persisted to `sessions.json` for resume display
+- `claudeModel` — model name from Claude session event
+
+### Project Fields
+
+- `worktreeInitScript` — optional shell command run before `claude` in worktree sessions (e.g. `pnpm install`)
+
+## Session Creation Features
+
+PaneView's `+` button is a **split button**: `[+]` creates a plain terminal, `[▾]` opens a context menu (`SessionContextMenu.tsx`) with options:
+- `claude` / `claude --dangerously-skip-permissions` — creates session then sends command
+- **Worktree** — opens `WorktreeBranchDialog.tsx`, runs `git worktree add`, spawns PTY in new path
+- **Resume** — cascading submenu listing closed sessions with `claudeSessionId`, sends `claude --resume <session-id>`
+
+Command injection into new sessions uses **PTY output detection** (waits for first shell output) instead of a fixed delay, ensuring the shell prompt is ready before sending input.
+
+### Claude Code CLI Notes
+
+- Resume syntax: `claude --resume <session-id>` (NOT `--session-id` flag, which requires `--fork-session`)
+- Skip permissions: `claude --dangerously-skip-permissions`
+
+## IPC Channel Conventions
+
+When adding new IPC channels, update all 5 layers:
+1. `src/main/ipc/channels.ts` — channel constant
+2. `src/main/pty/pty-ipc.ts` — `ipcMain.handle` handler
+3. `src/preload/index.ts` — bridge function
+4. `src/renderer/types/electron-api.d.ts` — type declaration
+5. `src/renderer/services/session-service.ts` — service method
+
+**Important**: preload/main changes require full `pnpm dev` restart (no HMR).
+
 ## Tech Stack
 
 - **Runtime**: Electron 33 + Node

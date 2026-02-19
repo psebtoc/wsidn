@@ -13,6 +13,7 @@ interface SessionRecord {
   createdAt: string
   claudeSessionId: string | null
   claudeModel: string | null
+  claudeLastTitle: string | null
 }
 
 interface HookPayload {

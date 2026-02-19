@@ -13,7 +13,12 @@ contextBridge.exposeInMainWorld('wsidn', {
     create: (projectId: string, cwd: string) =>
       ipcRenderer.invoke('session:create', { projectId, cwd }),
     close: (sessionId: string) => ipcRenderer.invoke('session:close', { sessionId }),
-    list: (projectId: string) => ipcRenderer.invoke('session:list', { projectId })
+    list: (projectId: string) => ipcRenderer.invoke('session:list', { projectId }),
+    listAll: () => ipcRenderer.invoke('session:listAll'),
+    updateTitle: (sessionId: string, title: string) =>
+      ipcRenderer.invoke('session:updateTitle', { sessionId, title }),
+    createWorktree: (projectId: string, cwd: string, branchName: string) =>
+      ipcRenderer.invoke('session:createWorktree', { projectId, cwd, branchName })
   },
 
   config: {
