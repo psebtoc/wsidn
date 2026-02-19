@@ -34,13 +34,11 @@ export default function SessionPanel({
   }
 
   const handleRefresh = (session: Session) => {
-    if (!session.claudeSessionId) return
+    const resumeId = session.claudeSessionId ?? session.lastClaudeSessionId
+    if (!resumeId) return
     sessionService.terminalInput(session.id, 'exit\n')
     setTimeout(() => {
-      sessionService.terminalInput(
-        session.id,
-        `claude --resume --session-id ${session.claudeSessionId}\n`
-      )
+      sessionService.terminalInput(session.id, `claude --resume ${resumeId}\n`)
     }, 500)
   }
 

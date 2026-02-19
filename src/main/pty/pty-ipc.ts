@@ -18,6 +18,7 @@ interface Session {
   claudeSessionId: string | null
   claudeModel: string | null
   claudeLastTitle: string | null
+  lastClaudeSessionId: string | null
 }
 
 function sessionsPath(projectId: string): string {
@@ -43,7 +44,8 @@ export function registerPtyIpc(): void {
           createdAt: new Date().toISOString(),
           claudeSessionId: null,
           claudeModel: null,
-          claudeLastTitle: null
+          claudeLastTitle: null,
+          lastClaudeSessionId: null
         }
 
         sessions.push(session)
@@ -172,7 +174,8 @@ export function registerPtyIpc(): void {
           createdAt: new Date().toISOString(),
           claudeSessionId: null,
           claudeModel: null,
-          claudeLastTitle: null
+          claudeLastTitle: null,
+          lastClaudeSessionId: null
         }
 
         sessions.push(session)
@@ -184,6 +187,72 @@ export function registerPtyIpc(): void {
         const initScript = project?.worktreeInitScript ?? null
 
         return { success: true, data: { session, worktreePath, initScript } }
+      } catch (err) {
+        return { success: false, error: String(err) }
+      }
+    }
+  )
+
+  // --- Session spawn (PTY only, no record creation) ---
+
+  ipcMain.handle(
+    IPC_CHANNELS.SESSION_SPAWN,
+    (_event, { sessionId, cwd }: { sessionId: string; cwd: string }) => {
+      try {
+        ptyManager.spawn(sessionId, cwd)
+        return { success: true, data: true }
+      } catch (err) {
+        return { success: false, error: String(err) }
+      }
+    }
+  )
+
+  // --- Clear stale Claude bindings (app startup) ---
+
+  ipcMain.handle(
+    IPC_CHANNELS.SESSION_CLEAR_STALE,
+    (_event, { projectId }: { projectId: string }) => {
+      try {
+        const filePath = sessionsPath(projectId)
+        const sessions = readJson<Session[]>(filePath, [])
+        let changed = false
+        for (const session of sessions) {
+          if (session.status === 'active' && session.claudeSessionId) {
+            session.lastClaudeSessionId = session.lastClaudeSessionId ?? session.claudeSessionId
+            session.claudeSessionId = null
+            session.claudeModel = null
+            changed = true
+          }
+        }
+        if (changed) writeJson(filePath, sessions)
+        return { success: true, data: true }
+      } catch (err) {
+        return { success: false, error: String(err) }
+      }
+    }
+  )
+
+  // --- Session rename ---
+
+  ipcMain.handle(
+    IPC_CHANNELS.SESSION_RENAME,
+    (_event, { sessionId, name }: { sessionId: string; name: string }) => {
+      try {
+        const projectsDir = getAppDataPath('projects')
+        if (existsSync(projectsDir)) {
+          for (const entry of readdirSync(projectsDir, { withFileTypes: true })) {
+            if (!entry.isDirectory()) continue
+            const filePath = getAppDataPath('projects', entry.name, 'sessions.json')
+            const sessions = readJson<Session[]>(filePath, [])
+            const session = sessions.find((s) => s.id === sessionId)
+            if (session) {
+              session.name = name.trim() || session.name
+              writeJson(filePath, sessions)
+              return { success: true, data: true }
+            }
+          }
+        }
+        return { success: false, error: 'Session not found' }
       } catch (err) {
         return { success: false, error: String(err) }
       }

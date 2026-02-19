@@ -32,6 +32,9 @@ export interface WsidnAPI {
       cwd: string,
       branchName: string
     ) => Promise<IpcResult<{ session: Session; worktreePath: string; initScript: string | null }>>
+    spawn: (sessionId: string, cwd: string) => Promise<IpcResult<boolean>>
+    clearStale: (projectId: string) => Promise<IpcResult<boolean>>
+    rename: (sessionId: string, name: string) => Promise<IpcResult<boolean>>
   }
   config: {
     get: () => Promise<IpcResult<AppConfig>>

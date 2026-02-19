@@ -12,6 +12,9 @@ export const IPC_CHANNELS = {
   SESSION_LIST_ALL: 'session:listAll',
   SESSION_UPDATE_TITLE: 'session:updateTitle',
   SESSION_CREATE_WORKTREE: 'session:createWorktree',
+  SESSION_SPAWN: 'session:spawn',
+  SESSION_CLEAR_STALE: 'session:clearStale',
+  SESSION_RENAME: 'session:rename',
 
   // Project (request-response)
   PROJECT_CREATE: 'project:create',

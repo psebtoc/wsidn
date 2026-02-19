@@ -60,6 +60,8 @@ Storage helpers are in `src/main/storage/storage-manager.ts` (`readJson`, `write
 
 `node-pty` spawns system shell processes, managed by the singleton `PtyManager` (`src/main/pty/pty-manager.ts`). The renderer uses xterm.js via the `useTerminal` hook (`src/renderer/hooks/useTerminal.ts`). Each session gets its own PTY instance keyed by session UUID.
 
+**Important**: All `webContents.send()` calls in `PtyManager` and `HookServer` must guard with `!mainWindow.isDestroyed()` to prevent "Object has been destroyed" errors during app shutdown.
+
 ### UI Structure
 
 - Frameless window with custom title bar (`TitleBar` with project dropdown + `WindowControls`)
@@ -81,6 +83,7 @@ Defined in `src/renderer/types/project.ts`: `Project`, `Session`, `Todo` (sessio
 ### Session Fields
 
 - `claudeSessionId` — bound by hook-server when Claude Code starts (cleared on stop)
+- `lastClaudeSessionId` — preserved copy of `claudeSessionId` that survives Claude stop; used for resume discovery
 - `claudeLastTitle` — last OSC title task text, persisted to `sessions.json` for resume display
 - `claudeModel` — model name from Claude session event
 
@@ -88,12 +91,36 @@ Defined in `src/renderer/types/project.ts`: `Project`, `Session`, `Todo` (sessio
 
 - `worktreeInitScript` — optional shell command run before `claude` in worktree sessions (e.g. `pnpm install`)
 
+## Session Lifecycle
+
+### Session Restoration on App Restart
+
+On app startup, `loadSessions()` performs:
+1. `session:clearStale` — nulls stale `claudeSessionId` on disk (preserving into `lastClaudeSessionId`), since no Claude process survives restart
+2. `session:list` — reads all sessions from disk
+3. Restores workspace layout from `workspace.json`
+4. `session:spawn` — re-spawns PTY processes for all active sessions (record already exists, only PTY needed)
+
+The `session:spawn` IPC channel creates a PTY without creating a new session record, separating "data record" from "runtime resource".
+
+### Session Close Behavior
+
+Closed sessions are kept in the in-memory `sessions` array (marked `status: 'closed'`) so they remain available for resume discovery. They are not removed from memory on close.
+
+### Claude Session ID Preservation
+
+When Claude Code stops, `claudeSessionId` is moved to `lastClaudeSessionId` (not just nulled). This allows resume even after Claude exits. The hook-server's `handleSessionStop` calls `preserveAndClearClaudeBinding()` for this.
+
+### Session Rename
+
+Sessions can be renamed inline by double-clicking the tab in PaneView. Uses `session:rename` IPC channel. Follows the same pattern as PaneHeader inline rename.
+
 ## Session Creation Features
 
 PaneView's `+` button is a **split button**: `[+]` creates a plain terminal, `[▾]` opens a context menu (`SessionContextMenu.tsx`) with options:
 - `claude` / `claude --dangerously-skip-permissions` — creates session then sends command
 - **Worktree** — opens `WorktreeBranchDialog.tsx`, runs `git worktree add`, spawns PTY in new path
-- **Resume** — cascading submenu listing closed sessions with `claudeSessionId`, sends `claude --resume <session-id>`
+- **Resume** — cascading submenu listing closed sessions with `lastClaudeSessionId`, sends `claude --resume <session-id>`. Shows dual-track display: session name (primary) + claude last title (secondary).
 
 Command injection into new sessions uses **PTY output detection** (waits for first shell output) instead of a fixed delay, ensuring the shell prompt is ready before sending input.
 

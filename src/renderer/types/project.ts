@@ -16,6 +16,7 @@ export interface Session {
   claudeSessionId: string | null
   claudeModel: string | null
   claudeLastTitle: string | null
+  lastClaudeSessionId: string | null
 }
 
 export interface ClaudeActivity {

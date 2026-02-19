@@ -20,6 +20,15 @@ export const sessionService = {
   async createWorktree(projectId: string, cwd: string, branchName: string) {
     return unwrapIpc(await window.wsidn.session.createWorktree(projectId, cwd, branchName))
   },
+  async spawn(sessionId: string, cwd: string) {
+    return unwrapIpc(await window.wsidn.session.spawn(sessionId, cwd))
+  },
+  async clearStale(projectId: string) {
+    return unwrapIpc(await window.wsidn.session.clearStale(projectId))
+  },
+  async rename(sessionId: string, name: string) {
+    return unwrapIpc(await window.wsidn.session.rename(sessionId, name))
+  },
   async loadWorkspace(projectId: string): Promise<WorkspaceState | null> {
     return unwrapIpc(await window.wsidn.workspace.load(projectId))
   },

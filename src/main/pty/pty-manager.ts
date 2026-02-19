@@ -28,12 +28,16 @@ class PtyManager {
     })
 
     ptyProcess.onData((data) => {
-      this.mainWindow?.webContents.send('pty:output', { sessionId, data })
+      if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+        this.mainWindow.webContents.send('pty:output', { sessionId, data })
+      }
     })
 
     ptyProcess.onExit(({ exitCode }) => {
       this.registry.delete(sessionId)
-      this.mainWindow?.webContents.send('pty:exit', { sessionId, exitCode })
+      if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+        this.mainWindow.webContents.send('pty:exit', { sessionId, exitCode })
+      }
     })
 
     this.registry.set(sessionId, ptyProcess)

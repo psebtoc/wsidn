@@ -14,6 +14,7 @@ interface SessionRecord {
   claudeSessionId: string | null
   claudeModel: string | null
   claudeLastTitle: string | null
+  lastClaudeSessionId: string | null
 }
 
 interface HookPayload {
@@ -96,27 +97,31 @@ class HookServer {
     this.updateSessionRecord(wsidn_session_id, claude_session_id, model)
 
     // Push event to renderer
-    this.mainWindow?.webContents.send(IPC_CHANNELS.CLAUDE_SESSION_EVENT, {
-      wsidnSessionId: wsidn_session_id,
-      claudeSessionId: claude_session_id,
-      source,
-      model
-    })
+    if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+      this.mainWindow.webContents.send(IPC_CHANNELS.CLAUDE_SESSION_EVENT, {
+        wsidnSessionId: wsidn_session_id,
+        claudeSessionId: claude_session_id,
+        source,
+        model
+      })
+    }
   }
 
   private handleSessionStop(payload: HookPayload): void {
     const { wsidn_session_id } = payload
 
-    // Clear binding on disk
-    this.updateSessionRecord(wsidn_session_id, null, '')
+    // Preserve claudeSessionId into lastClaudeSessionId, then clear binding
+    this.preserveAndClearClaudeBinding(wsidn_session_id)
 
     // Push stop event to renderer
-    this.mainWindow?.webContents.send(IPC_CHANNELS.CLAUDE_SESSION_EVENT, {
-      wsidnSessionId: wsidn_session_id,
-      claudeSessionId: null,
-      source: 'stop',
-      model: ''
-    })
+    if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+      this.mainWindow.webContents.send(IPC_CHANNELS.CLAUDE_SESSION_EVENT, {
+        wsidnSessionId: wsidn_session_id,
+        claudeSessionId: null,
+        source: 'stop',
+        model: ''
+      })
+    }
   }
 
   private updateSessionRecord(
@@ -135,6 +140,30 @@ class HookServer {
       if (session) {
         session.claudeSessionId = claudeSessionId
         session.claudeModel = model
+        if (claudeSessionId) {
+          session.lastClaudeSessionId = claudeSessionId
+        }
+        writeJson(filePath, sessions)
+        break
+      }
+    }
+  }
+
+  private preserveAndClearClaudeBinding(wsidnSessionId: string): void {
+    const projectsDir = getAppDataPath('projects')
+    if (!existsSync(projectsDir)) return
+
+    for (const entry of readdirSync(projectsDir, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue
+      const filePath = getAppDataPath('projects', entry.name, 'sessions.json')
+      const sessions = readJson<SessionRecord[]>(filePath, [])
+      const session = sessions.find((s) => s.id === wsidnSessionId)
+      if (session) {
+        if (session.claudeSessionId) {
+          session.lastClaudeSessionId = session.claudeSessionId
+        }
+        session.claudeSessionId = null
+        session.claudeModel = null
         writeJson(filePath, sessions)
         break
       }

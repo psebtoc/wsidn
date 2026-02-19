@@ -185,12 +185,15 @@ export default function SessionContextMenu({
               {resumableSessions.map((s) => (
                 <button
                   key={s.claudeSessionId}
-                  className={itemClass}
+                  className="w-full text-left px-3 py-1.5 hover:bg-neutral-700/60 transition-colors rounded-sm"
                   onClick={() => { onResume(s.claudeSessionId); onClose() }}
                 >
-                  <span className="truncate">
-                    {s.claudeLastTitle ?? s.name}
-                  </span>
+                  <span className="block text-xs text-neutral-200 truncate">{s.name}</span>
+                  {s.claudeLastTitle && (
+                    <span className="block text-[10px] text-neutral-500 truncate mt-0.5">
+                      {s.claudeLastTitle}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>

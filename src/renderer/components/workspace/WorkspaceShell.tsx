@@ -118,9 +118,9 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
     return collectDividers(splitLayout)
   }, [splitLayout])
 
-  // Closed sessions that have a claudeSessionId — available for resume
+  // Closed sessions that have a lastClaudeSessionId — available for resume
   const closedClaudeSessions = useMemo(
-    () => sessions.filter((s) => s.status === 'closed' && s.claudeSessionId),
+    () => sessions.filter((s) => s.status === 'closed' && s.lastClaudeSessionId),
     [sessions]
   )
 

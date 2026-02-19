@@ -112,6 +112,9 @@ interface SessionState {
   updateClaudeActivity: (sessionId: string, activity: ClaudeActivity | null) => void
   updateClaudeLastTitle: (sessionId: string, title: string) => void
 
+  // Session rename
+  renameSession: (sessionId: string, name: string) => Promise<void>
+
   // Session creation with command
   createSessionInPaneWithCommand: (paneId: string, projectId: string, cwd: string, command: string) => Promise<void>
   createWorktreeSessionInPane: (paneId: string, projectId: string, cwd: string, branchName: string) => Promise<void>
@@ -138,6 +141,9 @@ export const useSessionStore = create<SessionState>((set, get) => ({
 
   loadSessions: async (projectId: string) => {
     _currentProjectId = projectId
+
+    // Clear stale Claude bindings from disk (no Claude process survives restart)
+    await sessionService.clearStale(projectId).catch(() => {})
 
     const diskSessions = await sessionService.list(projectId)
     const currentSessions = get().sessions
@@ -260,6 +266,11 @@ export const useSessionStore = create<SessionState>((set, get) => ({
         focusedPaneId: paneId,
         minimizedPanes: [],
       })
+    }
+
+    // Spawn PTY processes for active sessions restored from disk
+    for (const session of activeSessions) {
+      sessionService.spawn(session.id, session.cwd).catch(() => {})
     }
 
     _scheduleSave()
@@ -389,7 +400,9 @@ export const useSessionStore = create<SessionState>((set, get) => ({
 
   closeSessionInPane: async (paneId, sessionId) => {
     await sessionService.close(sessionId)
-    const sessions = get().sessions.filter((s) => s.id !== sessionId)
+    const sessions = get().sessions.map((s) =>
+      s.id === sessionId ? { ...s, status: 'closed' as const } : s
+    )
 
     let newPanes = get().panes.map((p) => {
       if (p.id !== paneId) return p
@@ -465,7 +478,9 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     }
 
     const closedSet = new Set(pane.sessionIds)
-    const sessions = get().sessions.filter((s) => !closedSet.has(s.id))
+    const sessions = get().sessions.map((s) =>
+      closedSet.has(s.id) ? { ...s, status: 'closed' as const } : s
+    )
     const panes = get().panes.filter((p) => p.id !== paneId)
     const minimizedPanes = get().minimizedPanes.filter((m) => m.paneId !== paneId)
 
@@ -577,10 +592,15 @@ export const useSessionStore = create<SessionState>((set, get) => ({
 
   handleClaudeSessionEvent: (event) => {
     if (event.source === 'stop') {
-      // SessionEnd — Claude session terminated, clear binding and activity
+      // SessionEnd — Claude session terminated, preserve ID for resume, clear binding
       const sessions = get().sessions.map((s) =>
         s.id === event.wsidnSessionId
-          ? { ...s, claudeSessionId: null, claudeModel: null }
+          ? {
+              ...s,
+              lastClaudeSessionId: s.claudeSessionId ?? s.lastClaudeSessionId,
+              claudeSessionId: null,
+              claudeModel: null,
+            }
           : s
       )
       const { [event.wsidnSessionId]: _, ...restActivities } = get().claudeActivities
@@ -593,7 +613,12 @@ export const useSessionStore = create<SessionState>((set, get) => ({
 
     const sessions = get().sessions.map((s) =>
       s.id === event.wsidnSessionId
-        ? { ...s, claudeSessionId: event.claudeSessionId, claudeModel: event.model }
+        ? {
+            ...s,
+            claudeSessionId: event.claudeSessionId,
+            claudeModel: event.model,
+            lastClaudeSessionId: event.claudeSessionId,
+          }
         : s
     )
     set({ sessions })
@@ -613,6 +638,16 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   updateClaudeLastTitle: (sessionId, title) => {
     const sessions = get().sessions.map((s) =>
       s.id === sessionId ? { ...s, claudeLastTitle: title } : s
+    )
+    set({ sessions })
+  },
+
+  renameSession: async (sessionId, name) => {
+    const trimmed = name.trim()
+    if (!trimmed) return
+    await sessionService.rename(sessionId, trimmed)
+    const sessions = get().sessions.map((s) =>
+      s.id === sessionId ? { ...s, name: trimmed } : s
     )
     set({ sessions })
   },

@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import type { Pane, Session, SplitDirection } from '@renderer/types/project'
 import { useDndStore } from '@renderer/stores/dnd-store'
 import { useSessionStore } from '@renderer/stores/session-store'
@@ -50,6 +50,9 @@ export default function PaneView({
   const [showContextMenu, setShowContextMenu] = useState(false)
   const [contextMenuAnchor, setContextMenuAnchor] = useState<DOMRect | null>(null)
   const [showWorktreeDialog, setShowWorktreeDialog] = useState(false)
+  const [editingSessionId, setEditingSessionId] = useState<string | null>(null)
+  const [editValue, setEditValue] = useState('')
+  const editInputRef = useRef<HTMLInputElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
 
   const dragging = useDndStore((s) => s.dragging)
@@ -57,6 +60,13 @@ export default function PaneView({
   const reorderSession = useSessionStore((s) => s.reorderSession)
   const moveSessionToPane = useSessionStore((s) => s.moveSessionToPane)
   const moveSessionToNewSplit = useSessionStore((s) => s.moveSessionToNewSplit)
+  const renameSession = useSessionStore((s) => s.renameSession)
+
+  useEffect(() => {
+    if (editingSessionId) {
+      requestAnimationFrame(() => editInputRef.current?.select())
+    }
+  }, [editingSessionId])
 
   const paneSessions = pane.sessionIds
     .map((id) => sessions.find((s) => s.id === id))
@@ -270,6 +280,39 @@ export default function PaneView({
           {paneSessions.map((session, index) => {
             const isActive = session.id === pane.activeSessionId
             const isDragged = dragging?.sessionId === session.id && dragging?.sourcePaneId === pane.id
+            const isEditing = editingSessionId === session.id
+
+            if (isEditing) {
+              return (
+                <div
+                  key={session.id}
+                  className={`relative flex items-center px-1 shrink-0 ${
+                    isActive
+                      ? `border border-neutral-700 border-b-[#1a1a1a] bg-[#1a1a1a] ${isFocused ? 'border-t-blue-500' : ''} ${index === 0 ? 'border-l-0' : ''}`
+                      : 'border-b border-b-neutral-700 bg-neutral-800/40'
+                  }`}
+                >
+                  <input
+                    ref={editInputRef}
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        renameSession(session.id, editValue)
+                        setEditingSessionId(null)
+                      }
+                      if (e.key === 'Escape') setEditingSessionId(null)
+                    }}
+                    onBlur={() => {
+                      renameSession(session.id, editValue)
+                      setEditingSessionId(null)
+                    }}
+                    className="text-xs text-neutral-200 bg-transparent border-none outline-none w-[100px]"
+                  />
+                </div>
+              )
+            }
+
             return (
               <button
                 key={session.id}
@@ -282,6 +325,11 @@ export default function PaneView({
                 onClick={(e) => {
                   e.stopPropagation()
                   onSetActiveSession(session.id)
+                }}
+                onDoubleClick={(e) => {
+                  e.stopPropagation()
+                  setEditingSessionId(session.id)
+                  setEditValue(session.name)
                 }}
                 className={`group relative flex items-center gap-1.5 px-3 shrink-0 text-xs transition-colors ${
                   isDragged ? 'opacity-50' : ''
@@ -490,10 +538,10 @@ export default function PaneView({
           onSelectClaudeDangerously={() => onCreateSessionWithCommand?.('claude --dangerously-skip-permissions\n')}
           onSelectWorktree={() => setShowWorktreeDialog(true)}
           resumableSessions={closedClaudeSessions
-            .filter((s): s is Session & { claudeSessionId: string } => !!s.claudeSessionId)
+            .filter((s): s is Session & { lastClaudeSessionId: string } => !!s.lastClaudeSessionId)
             .map((s) => ({
               id: s.id,
-              claudeSessionId: s.claudeSessionId,
+              claudeSessionId: s.lastClaudeSessionId,
               claudeLastTitle: s.claudeLastTitle,
               name: s.name,
             }))}

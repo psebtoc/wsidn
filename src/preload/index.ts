@@ -18,7 +18,13 @@ contextBridge.exposeInMainWorld('wsidn', {
     updateTitle: (sessionId: string, title: string) =>
       ipcRenderer.invoke('session:updateTitle', { sessionId, title }),
     createWorktree: (projectId: string, cwd: string, branchName: string) =>
-      ipcRenderer.invoke('session:createWorktree', { projectId, cwd, branchName })
+      ipcRenderer.invoke('session:createWorktree', { projectId, cwd, branchName }),
+    spawn: (sessionId: string, cwd: string) =>
+      ipcRenderer.invoke('session:spawn', { sessionId, cwd }),
+    clearStale: (projectId: string) =>
+      ipcRenderer.invoke('session:clearStale', { projectId }),
+    rename: (sessionId: string, name: string) =>
+      ipcRenderer.invoke('session:rename', { sessionId, name })
   },
 
   config: {
