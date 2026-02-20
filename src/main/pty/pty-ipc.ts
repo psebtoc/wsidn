@@ -4,11 +4,7 @@ import { join, basename } from 'path'
 import { IPC_CHANNELS } from '@main/ipc/channels'
 import { getAppDataPath, readJson, writeJson } from '@main/storage/storage-manager'
 import { getProject } from '@main/storage/project-storage'
-import {
-  readResumeHistory,
-  appendResumeHistory,
-  migrateLegacySessions
-} from '@main/storage/resume-history'
+import { readResumeHistory, appendResumeHistory } from '@main/storage/resume-history'
 import { ptyManager } from './pty-manager'
 
 export function registerPtyIpc(): void {
@@ -72,9 +68,6 @@ export function registerPtyIpc(): void {
     IPC_CHANNELS.RESUME_HISTORY_LIST,
     (_event, { projectId }: { projectId: string }) => {
       try {
-        // Run one-time migration if legacy sessions.json exists
-        migrateLegacySessions(projectId)
-
         const entries = readResumeHistory(projectId)
         return { success: true, data: entries }
       } catch (err) {
