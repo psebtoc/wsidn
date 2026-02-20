@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Plus, X, ChevronDown, Columns2, Rows2, SquareCheckBig, Minus } from 'lucide-react'
 import type { Pane, Session, SplitDirection } from '@renderer/types/project'
 import { useDndStore } from '@renderer/stores/dnd-store'
 import { useSessionStore } from '@renderer/stores/session-store'
@@ -321,7 +322,7 @@ export default function PaneView({
 
     return (
       <div
-        className={`absolute top-1 bottom-1 w-[2px] bg-blue-500 z-10 ${
+        className={`absolute top-1 bottom-1 w-[2px] bg-primary z-10 ${
           side === 'left' ? 'left-0 -translate-x-1/2' : 'right-0 translate-x-1/2'
         }`}
       />
@@ -343,7 +344,7 @@ export default function PaneView({
 
     return (
       <div className="absolute inset-0 z-20 pointer-events-none">
-        <div className={`absolute ${edgeStyles[dropEdge]} bg-blue-500/20 border-2 border-blue-500/40 rounded`} />
+        <div className={`absolute ${edgeStyles[dropEdge]} bg-primary/20 border-2 border-primary/40 rounded`} />
       </div>
     )
   }
@@ -370,7 +371,7 @@ export default function PaneView({
                   ref={isActive ? activeTabRef as React.Ref<HTMLDivElement> : undefined}
                   className={`relative flex items-center px-1 shrink-0 ${
                     isActive
-                      ? `border border-neutral-700 border-b-[#1a1a1a] bg-[#1a1a1a] ${isFocused ? 'border-t-blue-500' : ''} ${index === 0 ? 'border-l-0' : ''}`
+                      ? `border border-neutral-700 border-b-[#1a1a1a] bg-[#1a1a1a] ${isFocused ? 'border-t-primary' : ''} ${index === 0 ? 'border-l-0' : ''}`
                       : 'border-b border-b-neutral-700 bg-neutral-800/40'
                   }`}
                 >
@@ -418,7 +419,7 @@ export default function PaneView({
                   isDragged ? 'opacity-50' : ''
                 } ${
                   isActive
-                    ? `border border-neutral-700 border-b-[#1a1a1a] bg-[#1a1a1a] text-neutral-200 ${isFocused ? 'border-t-blue-500' : ''} ${index === 0 ? 'border-l-0' : ''}`
+                    ? `border border-neutral-700 border-b-[#1a1a1a] bg-[#1a1a1a] text-neutral-200 ${isFocused ? 'border-t-primary' : ''} ${index === 0 ? 'border-l-0' : ''}`
                     : 'border-b border-b-neutral-700 text-neutral-500 hover:text-neutral-400 hover:bg-neutral-800/40'
                 }`}
               >
@@ -434,9 +435,7 @@ export default function PaneView({
                   }}
                   className="p-0.5 rounded hover:bg-neutral-600 opacity-0 group-hover:opacity-100 transition-opacity"
                 >
-                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M18 6L6 18M6 6l12 12" />
-                  </svg>
+                  <X size={8} />
                 </span>
               </button>
             )
@@ -464,9 +463,7 @@ export default function PaneView({
                 className="flex items-center justify-center w-5 h-6 rounded-l text-neutral-500
                            hover:text-neutral-300 hover:bg-neutral-700/50 transition-colors"
               >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
+                <Plus size={12} />
               </button>
             </Tooltip>
             <Tooltip content={t('pane.newSessionOptions')} side="bottom">
@@ -480,9 +477,7 @@ export default function PaneView({
                 className="flex items-center justify-center w-4 h-6 rounded-r text-neutral-500
                            hover:text-neutral-300 hover:bg-neutral-700/50 transition-colors"
               >
-                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
+                <ChevronDown size={8} />
               </button>
             </Tooltip>
           </div>
@@ -496,10 +491,7 @@ export default function PaneView({
               className="flex items-center justify-center w-6 h-6 rounded text-neutral-500
                          hover:text-neutral-300 hover:bg-neutral-700/50 transition-colors"
             >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <rect x="3" y="3" width="18" height="18" rx="2" />
-                <line x1="12" y1="3" x2="12" y2="21" />
-              </svg>
+              <Columns2 size={12} />
             </button>
           </Tooltip>
           <Tooltip content={t('pane.splitDown')} side="bottom">
@@ -511,10 +503,7 @@ export default function PaneView({
               className="flex items-center justify-center w-6 h-6 rounded text-neutral-500
                          hover:text-neutral-300 hover:bg-neutral-700/50 transition-colors"
             >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <rect x="3" y="3" width="18" height="18" rx="2" />
-                <line x1="3" y1="12" x2="21" y2="12" />
-              </svg>
+              <Rows2 size={12} />
             </button>
           </Tooltip>
           <div className="w-px h-3.5 bg-neutral-700/50 mx-0.5" />
@@ -527,14 +516,11 @@ export default function PaneView({
               }}
               className={`flex items-center justify-center w-6 h-6 rounded transition-colors ${
                 showTodo
-                  ? 'text-blue-400 bg-neutral-700/50'
+                  ? 'text-primary bg-neutral-700/50'
                   : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-700/50'
               }`}
             >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M9 11l3 3L22 4" />
-                <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
-              </svg>
+              <SquareCheckBig size={12} />
             </button>
           </Tooltip>
           {isSplit && <div className="w-px h-3.5 bg-neutral-700/50 mx-0.5" />}
@@ -548,9 +534,7 @@ export default function PaneView({
                 className="flex items-center justify-center w-6 h-6 rounded text-neutral-500
                            hover:text-yellow-400 hover:bg-neutral-700/50 transition-colors"
               >
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M5 12h14" />
-                </svg>
+                <Minus size={10} />
               </button>
             </Tooltip>
           )}
@@ -564,9 +548,7 @@ export default function PaneView({
                 className="flex items-center justify-center w-6 h-6 rounded text-neutral-500
                            hover:text-red-400 hover:bg-neutral-700/50 transition-colors"
               >
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 6L6 18M6 6l12 12" />
-                </svg>
+                <X size={10} />
               </button>
             </Tooltip>
           )}

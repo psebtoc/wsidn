@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useProjectStore } from '@renderer/stores/project-store'
+import Button from '@renderer/components/ui/Button'
 import ProjectList from './ProjectList'
 import ProjectCreateModal from './ProjectCreateModal'
 
@@ -31,7 +32,7 @@ export default function StartupScreen() {
             <h2 className="text-sm font-medium text-neutral-400">{t('startup.projects')}</h2>
             <button
               onClick={() => setShowCreate(true)}
-              className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+              className="text-xs text-primary hover:text-primary-hover transition-colors"
             >
               {t('startup.newProject')}
             </button>
@@ -50,13 +51,14 @@ export default function StartupScreen() {
         </div>
 
         {/* Create button */}
-        <button
+        <Button
+          variant="primary"
+          fullWidth
+          className="py-3 rounded-lg"
           onClick={() => setShowCreate(true)}
-          className="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-medium text-white
-                     transition-colors"
         >
           {t('startup.createNewProject')}
-        </button>
+        </Button>
       </div>
 
       <ProjectCreateModal

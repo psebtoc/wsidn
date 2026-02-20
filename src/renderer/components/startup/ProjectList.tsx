@@ -1,5 +1,6 @@
 import type { Project } from '@renderer/types/project'
 import { useTranslation } from 'react-i18next'
+import { Trash2 } from 'lucide-react'
 import { useProjectStore } from '@renderer/stores/project-store'
 import Tooltip from '@renderer/components/ui/Tooltip'
 
@@ -49,9 +50,7 @@ export default function ProjectList({ projects, onSelect }: ProjectListProps) {
                 className="ml-3 p-1 text-neutral-600 hover:text-red-400 opacity-0 group-hover:opacity-100
                            transition-all shrink-0"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14" />
-                </svg>
+                <Trash2 size={14} />
               </button>
             </Tooltip>
           </button>

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { ChevronRight, Plus, X } from 'lucide-react'
 import { useTodoStore } from '@renderer/stores/todo-store'
 import type { Todo, TodoStatus } from '@renderer/types/project'
 import TodoCreateInput from './TodoCreateInput'
@@ -64,17 +65,10 @@ export default function TodoItem({ todo, depth }: TodoItemProps) {
           }`}
         >
           {hasChildren && (
-            <svg
-              width="10"
-              height="10"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
+            <ChevronRight
+              size={10}
               className={`transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}`}
-            >
-              <path d="M9 18l6-6-6-6" />
-            </svg>
+            />
           )}
         </button>
 
@@ -111,9 +105,7 @@ export default function TodoItem({ todo, depth }: TodoItemProps) {
             className="opacity-0 group-hover:opacity-100 w-4 h-4 flex items-center justify-center
                        text-neutral-500 hover:text-neutral-300 transition-opacity"
           >
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
+            <Plus size={10} />
           </button>
         </Tooltip>
 
@@ -124,9 +116,7 @@ export default function TodoItem({ todo, depth }: TodoItemProps) {
             className="opacity-0 group-hover:opacity-100 w-4 h-4 flex items-center justify-center
                        text-neutral-500 hover:text-red-400 transition-opacity"
           >
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
+            <X size={10} />
           </button>
         </Tooltip>
       </div>

@@ -34,7 +34,7 @@ export default function QuickInsertBar({ projectId, onInsert }: QuickInsertBarPr
         onChange={(e) => setFilter(e.target.value)}
         placeholder={t('template.filterPlaceholder')}
         className="w-24 px-2 py-0.5 bg-neutral-900 border border-neutral-700 rounded text-xs text-white
-                   placeholder:text-neutral-500 focus:outline-none focus:border-blue-500 shrink-0"
+                   placeholder:text-neutral-500 focus:outline-none focus:border-primary shrink-0"
       />
       <div className="flex-1 flex gap-1.5 overflow-x-auto min-w-0">
         {filtered.map((t) => (

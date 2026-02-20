@@ -48,7 +48,7 @@ export default function TodoCreateInput({ sessionId, parentId, onDone }: TodoCre
         onBlur={onDone}
         placeholder={t('todo.newTodoPlaceholder')}
         className="w-full bg-neutral-800 border border-neutral-600 rounded px-2 py-1 text-xs text-white
-                   placeholder-neutral-500 outline-none focus:border-blue-500 transition-colors"
+                   placeholder-neutral-500 outline-none focus:border-primary transition-colors"
       />
     </div>
   )

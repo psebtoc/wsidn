@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslation, Trans } from 'react-i18next'
 import { useProjectStore } from '@renderer/stores/project-store'
+import Button from '@renderer/components/ui/Button'
 
 interface ProjectSettingsPanelProps {
   projectId: string
@@ -69,7 +70,7 @@ export default function ProjectSettingsPanel({ projectId }: ProjectSettingsPanel
             placeholder={t('projectSettings.worktreeInitPlaceholder')}
             rows={3}
             className="w-full px-2 py-1.5 bg-neutral-800 border border-neutral-700 rounded text-sm text-white
-                       placeholder:text-neutral-600 resize-none focus:outline-none focus:border-blue-500"
+                       placeholder:text-neutral-600 resize-none focus:outline-none focus:border-primary"
           />
           <p className="text-xs text-neutral-600 mt-1">
             <Trans i18nKey="projectSettings.worktreeInitDescription" components={{ code: <code className="text-neutral-500" /> }} />
@@ -80,14 +81,9 @@ export default function ProjectSettingsPanel({ projectId }: ProjectSettingsPanel
       {/* Save Button */}
       {dirty && (
         <div className="px-3 py-2 border-t border-neutral-800">
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="w-full px-3 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:bg-neutral-600
-                       rounded text-xs text-white font-medium transition-colors"
-          >
+          <Button variant="primary" size="xs" fullWidth loading={saving} disabled={saving} onClick={handleSave}>
             {saving ? t('common.saving') : t('common.save')}
-          </button>
+          </Button>
         </div>
       )}
     </div>

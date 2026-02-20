@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useProjectStore } from '@renderer/stores/project-store'
 import { useSessionStore } from '@renderer/stores/session-store'
 import { sessionService } from '@renderer/services/session-service'
+import Button from '@renderer/components/ui/Button'
 import PaneView from './PaneView'
 import PaneStatusBar from './PaneStatusBar'
 import ActivityRibbon, { PANELS, type PanelId } from './ActivityRibbon'
@@ -245,13 +246,13 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
                 <p className="text-neutral-500 text-sm mb-3">{t('workspace.noActiveSessions')}</p>
-                <button
+                <Button
+                  variant="primary"
+                  size="md"
                   onClick={() => createFirstSession(projectId, project.path)}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm text-white
-                             transition-colors"
                 >
                   {t('workspace.newSession')}
-                </button>
+                </Button>
               </div>
             </div>
           ) : visiblePanes.length === 0 ? (
@@ -343,7 +344,7 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
                   >
                     {/* Visible 1px line */}
                     <div
-                      className={`absolute bg-neutral-700 transition-colors duration-150 delay-300 group-hover:bg-blue-500 ${
+                      className={`absolute bg-neutral-700 transition-colors duration-150 delay-300 group-hover:bg-primary ${
                         isHorizontal
                           ? 'left-[2px] top-0 bottom-0 w-px'
                           : 'top-[3px] left-0 right-0 h-px'

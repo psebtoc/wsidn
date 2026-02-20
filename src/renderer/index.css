@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    --color-primary: 37 99 235;
+    --color-primary-hover: 59 130 246;
+    --color-secondary: 64 64 64;
+    --color-secondary-hover: 82 82 82;
+  }
+}
+
 body {
   margin: 0;
   padding: 0;

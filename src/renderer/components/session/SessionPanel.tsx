@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { RefreshCw } from 'lucide-react'
 import type { Session, Pane, ClaudeActivity } from '@renderer/types/project'
 import { sessionService } from '@renderer/services/session-service'
 import { useSessionStore } from '@renderer/stores/session-store'
@@ -193,7 +194,7 @@ function PaneHeader({
           onBlur={() => onFinishEdit(editValue)}
           className="w-full text-[10px] font-medium text-neutral-300 uppercase tracking-wider
                      bg-neutral-800 border border-neutral-600 rounded px-1 py-0.5 outline-none
-                     focus:border-blue-500"
+                     focus:border-primary"
         />
       </div>
     )
@@ -260,10 +261,7 @@ function SessionCard({
             }}
             className="w-5 h-5 flex items-center justify-center rounded opacity-0 group-hover:opacity-100 transition-opacity text-neutral-400 hover:text-green-400 hover:bg-neutral-700 shrink-0"
           >
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M23 4v6h-6" />
-              <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" />
-            </svg>
+            <RefreshCw size={10} />
           </button>
         )}
       </div>

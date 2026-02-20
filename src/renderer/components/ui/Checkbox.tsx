@@ -11,7 +11,7 @@ export default function Checkbox({ state, onChange, className = '' }: CheckboxPr
       className={`w-3.5 h-3.5 flex-shrink-0 rounded-sm border flex items-center justify-center
                   transition-colors ${
                     state === 'checked'
-                      ? 'bg-blue-500 border-blue-500'
+                      ? 'bg-primary border-primary'
                       : 'border-neutral-500 hover:border-neutral-300'
                   } ${className}`}
     >
@@ -21,7 +21,7 @@ export default function Checkbox({ state, onChange, className = '' }: CheckboxPr
         </svg>
       )}
       {state === 'indeterminate' && (
-        <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+        <div className="w-1.5 h-1.5 rounded-full bg-primary/80" />
       )}
     </button>
   )

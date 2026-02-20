@@ -3,6 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { useTemplateStore } from '@renderer/stores/template-store'
 import type { PromptTemplate, TemplateScope } from '@renderer/types/project'
 import Radio from '@renderer/components/ui/Radio'
+import TextInput from '@renderer/components/ui/TextInput'
+import Textarea from '@renderer/components/ui/Textarea'
+import Button from '@renderer/components/ui/Button'
 
 interface TemplateEditorProps {
   template?: PromptTemplate
@@ -59,25 +62,22 @@ export default function TemplateEditor({ template, projectId, onSave, onCancel }
     <div className="p-4 space-y-3">
       <div>
         <label className="block text-sm text-neutral-400 mb-1">{t('template.titleLabel')}</label>
-        <input
-          type="text"
+        <TextInput
+          fullWidth
+          autoFocus
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder={t('template.titlePlaceholder')}
-          autoFocus
-          className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white text-sm
-                     placeholder:text-neutral-500 focus:outline-none focus:border-blue-500"
         />
       </div>
 
       <div>
         <label className="block text-sm text-neutral-400 mb-1">{t('template.contentLabel')}</label>
-        <textarea
+        <Textarea
+          fullWidth
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder={t('template.contentPlaceholder')}
-          className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white text-sm
-                     placeholder:text-neutral-500 focus:outline-none focus:border-blue-500 resize-y"
           style={{ minHeight: '120px' }}
         />
       </div>
@@ -107,20 +107,18 @@ export default function TemplateEditor({ template, projectId, onSave, onCancel }
       {error && <p className="text-red-400 text-sm">{error}</p>}
 
       <div className="flex justify-end gap-2 pt-2">
-        <button
-          onClick={onCancel}
-          className="px-3 py-1.5 text-sm text-neutral-400 hover:text-white transition-colors"
-        >
+        <Button variant="ghost" size="sm" onClick={onCancel}>
           {t('common.cancel')}
-        </button>
-        <button
-          onClick={handleSave}
+        </Button>
+        <Button
+          variant="primary"
+          size="sm"
+          loading={saving}
           disabled={saving || !title.trim() || !content.trim()}
-          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:bg-neutral-600 disabled:text-neutral-400
-                     rounded text-sm text-white font-medium transition-colors"
+          onClick={handleSave}
         >
           {saving ? t('common.saving') : t('common.save')}
-        </button>
+        </Button>
       </div>
     </div>
   )

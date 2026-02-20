@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Plus } from 'lucide-react'
 import { useTodoStore } from '@renderer/stores/todo-store'
 import TodoItem from './TodoItem'
 import TodoCreateInput from './TodoCreateInput'
@@ -35,9 +36,7 @@ export default function TodoPanel({ sessionId }: TodoPanelProps) {
             className="w-5 h-5 flex items-center justify-center rounded text-neutral-400
                        hover:text-white hover:bg-neutral-700 transition-colors"
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
+            <Plus size={12} />
           </button>
         </Tooltip>
       </div>
