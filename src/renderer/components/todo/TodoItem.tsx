@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useTodoStore } from '@renderer/stores/todo-store'
 import type { Todo, TodoStatus } from '@renderer/types/project'
 import TodoCreateInput from './TodoCreateInput'
@@ -25,6 +26,7 @@ function todoStatusToCheckbox(status: TodoStatus): 'unchecked' | 'indeterminate'
 }
 
 export default function TodoItem({ todo, depth }: TodoItemProps) {
+  const { t } = useTranslation()
   const todos = useTodoStore((s) => s.todos)
   const expandedIds = useTodoStore((s) => s.expandedIds)
   const toggleExpand = useTodoStore((s) => s.toggleExpand)
@@ -99,7 +101,7 @@ export default function TodoItem({ todo, depth }: TodoItemProps) {
         </span>
 
         {/* Add child button */}
-        <Tooltip content="Add sub-todo" side="top">
+        <Tooltip content={t('todo.addSubTodo')} side="top">
           <button
             onClick={(e) => {
               e.stopPropagation()
@@ -116,7 +118,7 @@ export default function TodoItem({ todo, depth }: TodoItemProps) {
         </Tooltip>
 
         {/* Delete button */}
-        <Tooltip content="Delete" side="top">
+        <Tooltip content={t('common.delete')} side="top">
           <button
             onClick={handleDelete}
             className="opacity-0 group-hover:opacity-100 w-4 h-4 flex items-center justify-center

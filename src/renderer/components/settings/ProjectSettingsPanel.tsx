@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation, Trans } from 'react-i18next'
 import { useProjectStore } from '@renderer/stores/project-store'
 
 interface ProjectSettingsPanelProps {
@@ -6,6 +7,7 @@ interface ProjectSettingsPanelProps {
 }
 
 export default function ProjectSettingsPanel({ projectId }: ProjectSettingsPanelProps) {
+  const { t } = useTranslation()
   const project = useProjectStore((s) => s.projects.find((p) => p.id === projectId))
   const updateProject = useProjectStore((s) => s.updateProject)
 
@@ -37,26 +39,26 @@ export default function ProjectSettingsPanel({ projectId }: ProjectSettingsPanel
       {/* Header */}
       <div className="h-12 px-3 border-b border-neutral-800 flex items-center shrink-0">
         <span className="text-xs font-medium text-neutral-300 uppercase tracking-wider">
-          Project Settings
+          {t('projectSettings.title')}
         </span>
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 py-3">
         {/* Project Info */}
         <div className="mb-4">
-          <label className="block text-xs text-neutral-500 mb-1">Name</label>
+          <label className="block text-xs text-neutral-500 mb-1">{t('projectSettings.name')}</label>
           <p className="text-sm text-neutral-300 truncate">{project.name}</p>
         </div>
 
         <div className="mb-5">
-          <label className="block text-xs text-neutral-500 mb-1">Path</label>
+          <label className="block text-xs text-neutral-500 mb-1">{t('projectSettings.path')}</label>
           <p className="text-xs text-neutral-400 break-all">{project.path}</p>
         </div>
 
         {/* Worktree Init Script */}
         <div>
           <label className="block text-xs text-neutral-400 mb-1.5">
-            Worktree Init Script
+            {t('projectSettings.worktreeInitScript')}
           </label>
           <textarea
             value={initScript}
@@ -64,13 +66,13 @@ export default function ProjectSettingsPanel({ projectId }: ProjectSettingsPanel
               setInitScript(e.target.value)
               setDirty(true)
             }}
-            placeholder="e.g. pnpm install"
+            placeholder={t('projectSettings.worktreeInitPlaceholder')}
             rows={3}
             className="w-full px-2 py-1.5 bg-neutral-800 border border-neutral-700 rounded text-sm text-white
                        placeholder:text-neutral-600 resize-none focus:outline-none focus:border-blue-500"
           />
           <p className="text-xs text-neutral-600 mt-1">
-            Runs before <code className="text-neutral-500">claude</code> in new worktree sessions.
+            <Trans i18nKey="projectSettings.worktreeInitDescription" components={{ code: <code className="text-neutral-500" /> }} />
           </p>
         </div>
       </div>
@@ -84,7 +86,7 @@ export default function ProjectSettingsPanel({ projectId }: ProjectSettingsPanel
             className="w-full px-3 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:bg-neutral-600
                        rounded text-xs text-white font-medium transition-colors"
           >
-            {saving ? 'Saving...' : 'Save'}
+            {saving ? t('common.saving') : t('common.save')}
           </button>
         </div>
       )}

@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useProjectStore } from '@renderer/stores/project-store'
 import WindowControls from './WindowControls'
 import AppSettingsModal from '@renderer/components/settings/AppSettingsModal'
 
 export default function TitleBar() {
+  const { t } = useTranslation()
   const projects = useProjectStore((s) => s.projects)
   const activeProjectId = useProjectStore((s) => s.activeProjectId)
   const setActiveProject = useProjectStore((s) => s.setActiveProject)
@@ -96,7 +98,7 @@ export default function TitleBar() {
                   >
                     <path d="M19 12H5M12 19l-7-7 7-7" />
                   </svg>
-                  Back to projects
+                  {t('titleBar.backToProjects')}
                 </button>
               </div>
             </div>

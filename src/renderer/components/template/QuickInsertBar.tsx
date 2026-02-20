@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useTemplateStore } from '@renderer/stores/template-store'
 import Tooltip from '@renderer/components/ui/Tooltip'
 
@@ -8,6 +9,7 @@ interface QuickInsertBarProps {
 }
 
 export default function QuickInsertBar({ projectId, onInsert }: QuickInsertBarProps) {
+  const { t } = useTranslation()
   const templates = useTemplateStore((s) => s.templates)
   const loadTemplates = useTemplateStore((s) => s.loadTemplates)
   const [filter, setFilter] = useState('')
@@ -30,7 +32,7 @@ export default function QuickInsertBar({ projectId, onInsert }: QuickInsertBarPr
         type="text"
         value={filter}
         onChange={(e) => setFilter(e.target.value)}
-        placeholder="Filter..."
+        placeholder={t('template.filterPlaceholder')}
         className="w-24 px-2 py-0.5 bg-neutral-900 border border-neutral-700 rounded text-xs text-white
                    placeholder:text-neutral-500 focus:outline-none focus:border-blue-500 shrink-0"
       />

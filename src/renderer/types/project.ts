@@ -52,6 +52,7 @@ export interface AppConfig {
   theme: 'dark' | 'light'
   defaultShell: string
   terminal: TerminalConfig
+  language: 'ko' | 'en'
 }
 
 // --- Phase 2: TODO ---

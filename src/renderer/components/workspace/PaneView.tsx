@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { Pane, Session, SplitDirection } from '@renderer/types/project'
 import { useDndStore } from '@renderer/stores/dnd-store'
 import { useSessionStore } from '@renderer/stores/session-store'
@@ -43,6 +44,7 @@ export default function PaneView({
   onCreateWorktreeSession,
   closedClaudeSessions = []
 }: PaneViewProps) {
+  const { t } = useTranslation()
   const [showTodo, setShowTodo] = useState(false)
   const [tabDropIndex, setTabDropIndex] = useState<number | null>(null)
   const [tabDropSide, setTabDropSide] = useState<'left' | 'right'>('left')
@@ -453,7 +455,7 @@ export default function PaneView({
         <div className="flex items-center gap-0.5 px-1 shrink-0 border-b border-b-neutral-700">
           {/* Split button: [+] [▾] */}
           <div className="flex items-center">
-            <Tooltip content="New tab" side="bottom">
+            <Tooltip content={t('pane.newTab')} side="bottom">
               <button
                 onClick={(e) => {
                   e.stopPropagation()
@@ -467,7 +469,7 @@ export default function PaneView({
                 </svg>
               </button>
             </Tooltip>
-            <Tooltip content="New session options" side="bottom">
+            <Tooltip content={t('pane.newSessionOptions')} side="bottom">
               <button
                 onClick={(e) => {
                   e.stopPropagation()
@@ -485,7 +487,7 @@ export default function PaneView({
             </Tooltip>
           </div>
           <div className="w-px h-3.5 bg-neutral-700/50 mx-0.5" />
-          <Tooltip content="Split right" side="bottom">
+          <Tooltip content={t('pane.splitRight')} side="bottom">
             <button
               onClick={(e) => {
                 e.stopPropagation()
@@ -500,7 +502,7 @@ export default function PaneView({
               </svg>
             </button>
           </Tooltip>
-          <Tooltip content="Split down" side="bottom">
+          <Tooltip content={t('pane.splitDown')} side="bottom">
             <button
               onClick={(e) => {
                 e.stopPropagation()
@@ -517,7 +519,7 @@ export default function PaneView({
           </Tooltip>
           <div className="w-px h-3.5 bg-neutral-700/50 mx-0.5" />
           {/* TODO toggle */}
-          <Tooltip content="Toggle TODO" side="bottom">
+          <Tooltip content={t('pane.toggleTodo')} side="bottom">
             <button
               onClick={(e) => {
                 e.stopPropagation()
@@ -537,7 +539,7 @@ export default function PaneView({
           </Tooltip>
           {isSplit && <div className="w-px h-3.5 bg-neutral-700/50 mx-0.5" />}
           {isSplit && onMinimize && (
-            <Tooltip content="Minimize pane" side="bottom">
+            <Tooltip content={t('pane.minimizePane')} side="bottom">
               <button
                 onClick={(e) => {
                   e.stopPropagation()
@@ -553,7 +555,7 @@ export default function PaneView({
             </Tooltip>
           )}
           {isSplit && (
-            <Tooltip content="Close pane" side="bottom">
+            <Tooltip content={t('pane.closePane')} side="bottom">
               <button
                 onClick={(e) => {
                   e.stopPropagation()
@@ -621,7 +623,7 @@ export default function PaneView({
             <TodoPanel sessionId={activeSessionId} />
           ) : (
             <div className="w-64 h-full bg-neutral-900 border-l border-neutral-700/50 flex items-center justify-center">
-              <p className="text-xs text-neutral-500">No active session</p>
+              <p className="text-xs text-neutral-500">{t('pane.noActiveSession')}</p>
             </div>
           )
         )}

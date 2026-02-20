@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { createPortal } from 'react-dom'
 
 interface ResumableSession {
@@ -27,6 +28,7 @@ export default function SessionContextMenu({
   resumableSessions,
   onResume
 }: SessionContextMenuProps) {
+  const { t } = useTranslation()
   const [showResume, setShowResume] = useState(false)
   const [submenuFlipX, setSubmenuFlipX] = useState(false)
   const [flipY, setFlipY] = useState(false)
@@ -146,7 +148,7 @@ export default function SessionContextMenu({
           className={itemClass}
           onClick={() => { onSelectWorktree(); onClose() }}
         >
-          Worktree 분화
+          {t('contextMenu.worktree')}
         </button>
         <div className="h-px bg-neutral-700 my-1 mx-2" />
         <div
@@ -155,7 +157,7 @@ export default function SessionContextMenu({
           className="relative"
         >
           <button data-resume-trigger className={hasResumable ? itemClass : disabledClass}>
-            <span>Resume</span>
+            <span>{t('contextMenu.resume')}</span>
             <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M9 18l6-6-6-6" />
             </svg>

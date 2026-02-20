@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useProjectStore } from '@renderer/stores/project-store'
 import { useSessionStore } from '@renderer/stores/session-store'
 import { sessionService } from '@renderer/services/session-service'
@@ -23,6 +24,7 @@ interface WorkspaceShellProps {
 }
 
 export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
+  const { t } = useTranslation()
   const project = useProjectStore((s) => s.projects.find((p) => p.id === projectId))
 
   const sessions = useSessionStore((s) => s.sessions)
@@ -242,21 +244,21 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
           {visiblePanes.length === 0 && panes.length === 0 ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
-                <p className="text-neutral-500 text-sm mb-3">No active sessions</p>
+                <p className="text-neutral-500 text-sm mb-3">{t('workspace.noActiveSessions')}</p>
                 <button
                   onClick={() => createFirstSession(projectId, project.path)}
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm text-white
                              transition-colors"
                 >
-                  New Session
+                  {t('workspace.newSession')}
                 </button>
               </div>
             </div>
           ) : visiblePanes.length === 0 ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
-                <p className="text-neutral-500 text-sm mb-3">All panes minimized</p>
-                <p className="text-neutral-600 text-xs">Restore a pane from the status bar below</p>
+                <p className="text-neutral-500 text-sm mb-3">{t('workspace.allPanesMinimized')}</p>
+                <p className="text-neutral-600 text-xs">{t('workspace.restorePane')}</p>
               </div>
             </div>
           ) : (
