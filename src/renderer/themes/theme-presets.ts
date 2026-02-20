@@ -21,6 +21,33 @@ export interface ThemePreset {
   }
 }
 
+// --- Accent Color palette (Tailwind CSS v3 official) ---
+
+export interface AccentColor {
+  id: string
+  name: string
+  value: string       // 500 shade (main)
+  hoverDark: string   // 400 shade (hover on dark bg)
+  hoverLight: string  // 600 shade (hover on light bg)
+}
+
+export const ACCENT_COLORS: AccentColor[] = [
+  { id: 'blue',    name: 'Blue',    value: '#3b82f6', hoverDark: '#60a5fa', hoverLight: '#2563eb' },
+  { id: 'indigo',  name: 'Indigo',  value: '#6366f1', hoverDark: '#818cf8', hoverLight: '#4f46e5' },
+  { id: 'violet',  name: 'Violet',  value: '#8b5cf6', hoverDark: '#a78bfa', hoverLight: '#7c3aed' },
+  { id: 'pink',    name: 'Pink',    value: '#ec4899', hoverDark: '#f472b6', hoverLight: '#db2777' },
+  { id: 'rose',    name: 'Rose',    value: '#f43f5e', hoverDark: '#fb7185', hoverLight: '#e11d48' },
+  { id: 'orange',  name: 'Orange',  value: '#f97316', hoverDark: '#fb923c', hoverLight: '#ea580c' },
+  { id: 'emerald', name: 'Emerald', value: '#10b981', hoverDark: '#34d399', hoverLight: '#059669' },
+  { id: 'teal',    name: 'Teal',    value: '#14b8a6', hoverDark: '#2dd4bf', hoverLight: '#0d9488' },
+  { id: 'cyan',    name: 'Cyan',    value: '#06b6d4', hoverDark: '#22d3ee', hoverLight: '#0891b2' },
+  { id: 'sky',     name: 'Sky',     value: '#0ea5e9', hoverDark: '#38bdf8', hoverLight: '#0284c7' },
+]
+
+export function getAccentColor(id: string): AccentColor | undefined {
+  return ACCENT_COLORS.find((a) => a.id === id)
+}
+
 // CSS variables use space-separated RGB: "R G B"
 // Hex values used for preview cards and terminal colors
 
@@ -116,29 +143,6 @@ const solarizedDark: ThemePreset = {
   },
 }
 
-const solarizedLight: ThemePreset = {
-  id: 'solarized-light',
-  name: 'Solarized Light',
-  colors: {
-    base: '#fdf6e3',
-    surface: '#eee8d5',
-    elevated: '#ddd6c1',
-    hover: '#d0c8b0',
-    fg: '#073642',
-    fgSecondary: '#586e75',
-    fgMuted: '#657b83',
-    fgDim: '#93a1a1',
-    fgDimmer: '#b0bfbf',
-    border: '#d0c8b0',
-    borderSubtle: '#ddd6c1',
-    borderInput: '#93a1a1',
-    accent: '#268bd2',
-    accentHover: '#2e9ee6',
-    terminalBg: '#fdf6e3',
-    terminalFg: '#657b83',
-  },
-}
-
 const oneDark: ThemePreset = {
   id: 'one-dark',
   name: 'One Dark',
@@ -190,7 +194,6 @@ export const THEME_PRESETS: ThemePreset[] = [
   dracula,
   nord,
   solarizedDark,
-  solarizedLight,
   oneDark,
   catppuccinMocha,
 ]

@@ -1,11 +1,13 @@
 import { create } from 'zustand'
 import type { AppConfig } from '@renderer/types/project'
 import { unwrapIpc } from '@renderer/types/ipc'
-import { getThemePreset } from '@renderer/themes/theme-presets'
+import { getThemePreset, getAccentColor, hexToRgb } from '@renderer/themes/theme-presets'
 import i18n from '@renderer/i18n'
 
 const DEFAULT_CONFIG: AppConfig = {
   theme: 'default-dark',
+  accentColor: null,
+  terminalColors: {},
   defaultShell: '',
   terminal: {
     fontSize: 14,
@@ -13,14 +15,22 @@ const DEFAULT_CONFIG: AppConfig = {
     cursorStyle: 'block',
     cursorBlink: true,
     scrollback: 5000,
-    background: '#1a1a1a',
-    foreground: '#e0e0e0',
   },
   language: 'ko',
 }
 
-function applyTheme(themeId: string): void {
+function applyTheme(themeId: string, accentColorId?: string | null): void {
   document.documentElement.setAttribute('data-theme', themeId)
+  const root = document.documentElement
+  const accent = accentColorId ? getAccentColor(accentColorId) : undefined
+  if (accent) {
+    const hoverHex = accent.hoverDark
+    root.style.setProperty('--color-accent', hexToRgb(accent.value))
+    root.style.setProperty('--color-accent-hover', hexToRgb(hoverHex))
+  } else {
+    root.style.removeProperty('--color-accent')
+    root.style.removeProperty('--color-accent-hover')
+  }
 }
 
 interface ConfigState {
@@ -48,7 +58,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         terminal: { ...DEFAULT_CONFIG.terminal, ...config.terminal },
       }
       set({ config: merged, loaded: true })
-      applyTheme(merged.theme)
+      applyTheme(merged.theme, merged.accentColor)
       if (merged.language && merged.language !== i18n.language) {
         i18n.changeLanguage(merged.language)
       }
@@ -66,8 +76,8 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
       await unwrapIpc(await window.wsidn.config.set(key, patch[key]))
     }
     set({ config: next })
-    if (patch.theme && patch.theme !== prev.theme) {
-      applyTheme(patch.theme)
+    if (patch.theme || 'accentColor' in patch) {
+      applyTheme(next.theme, next.accentColor)
     }
     if (patch.language && patch.language !== i18n.language) {
       i18n.changeLanguage(patch.language)
@@ -75,4 +85,4 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
   },
 }))
 
-export { applyTheme, getThemePreset }
+export { applyTheme, getThemePreset, getAccentColor }

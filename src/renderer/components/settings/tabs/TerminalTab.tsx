@@ -1,26 +1,27 @@
 import { useTranslation } from 'react-i18next'
-import type { TerminalConfig } from '@renderer/types/project'
+import { RotateCcw } from 'lucide-react'
+import type { TerminalConfig, TerminalColorOverride } from '@renderer/types/project'
 import { getThemePreset } from '@renderer/themes/theme-presets'
 import Radio from '@renderer/components/ui/Radio'
 import Checkbox from '@renderer/components/ui/Checkbox'
-import Button from '@renderer/components/ui/Button'
+import Tooltip from '@renderer/components/ui/Tooltip'
 
 interface TerminalTabProps {
   terminal: TerminalConfig
   themeId: string
+  colorOverride: TerminalColorOverride | undefined
   onUpdate: (patch: Partial<TerminalConfig>) => void
+  onColorChange: (patch: TerminalColorOverride) => void
+  onColorReset: (key: 'background' | 'foreground') => void
 }
 
-export default function TerminalTab({ terminal, themeId, onUpdate }: TerminalTabProps) {
+export default function TerminalTab({ terminal, themeId, colorOverride, onUpdate, onColorChange, onColorReset }: TerminalTabProps) {
   const { t } = useTranslation()
-
-  const handleResetToThemeDefault = () => {
-    const preset = getThemePreset(themeId)
-    onUpdate({
-      background: preset.colors.terminalBg,
-      foreground: preset.colors.terminalFg,
-    })
-  }
+  const preset = getThemePreset(themeId)
+  const currentBg = colorOverride?.background ?? preset.colors.terminalBg
+  const currentFg = colorOverride?.foreground ?? preset.colors.terminalFg
+  const isCustomBg = colorOverride?.background !== undefined
+  const isCustomFg = colorOverride?.foreground !== undefined
 
   return (
     <div className="space-y-3">
@@ -90,38 +91,57 @@ export default function TerminalTab({ terminal, themeId, onUpdate }: TerminalTab
         />
       </div>
 
-      {/* Colors */}
-      <div className="flex items-center justify-between">
-        <label className="text-sm text-fg-secondary">{t('settings.background')}</label>
-        <div className="flex items-center gap-2">
-          <input
-            type="color"
-            value={terminal.background}
-            onChange={(e) => onUpdate({ background: e.target.value })}
-            className="w-8 h-6 rounded border border-border-input bg-transparent cursor-pointer"
-          />
-          <span className="text-xs text-fg-dim font-mono">{terminal.background}</span>
+      {/* Terminal Colors */}
+      <div className="pt-2 border-t border-border-subtle space-y-3">
+        {/* Background */}
+        <div className="flex items-center justify-between">
+          <label className="text-sm text-fg-secondary">{t('settings.background')}</label>
+          <div className="flex items-center gap-2">
+            <input
+              type="color"
+              value={currentBg}
+              onChange={(e) => onColorChange({ background: e.target.value })}
+              className="w-8 h-7 rounded border border-border-input cursor-pointer bg-transparent"
+            />
+            {isCustomBg && (
+              <Tooltip content={t('settings.terminal.resetToTheme')} side="top">
+                <button
+                  onClick={() => onColorReset('background')}
+                  className="p-1 rounded text-fg-dim hover:text-fg-secondary hover:bg-hover/50 transition-colors"
+                >
+                  <RotateCcw size={12} />
+                </button>
+              </Tooltip>
+            )}
+          </div>
         </div>
-      </div>
 
-      <div className="flex items-center justify-between">
-        <label className="text-sm text-fg-secondary">{t('settings.foreground')}</label>
-        <div className="flex items-center gap-2">
-          <input
-            type="color"
-            value={terminal.foreground}
-            onChange={(e) => onUpdate({ foreground: e.target.value })}
-            className="w-8 h-6 rounded border border-border-input bg-transparent cursor-pointer"
-          />
-          <span className="text-xs text-fg-dim font-mono">{terminal.foreground}</span>
+        {/* Foreground */}
+        <div className="flex items-center justify-between">
+          <label className="text-sm text-fg-secondary">{t('settings.foreground')}</label>
+          <div className="flex items-center gap-2">
+            <input
+              type="color"
+              value={currentFg}
+              onChange={(e) => onColorChange({ foreground: e.target.value })}
+              className="w-8 h-7 rounded border border-border-input cursor-pointer bg-transparent"
+            />
+            {isCustomFg && (
+              <Tooltip content={t('settings.terminal.resetToTheme')} side="top">
+                <button
+                  onClick={() => onColorReset('foreground')}
+                  className="p-1 rounded text-fg-dim hover:text-fg-secondary hover:bg-hover/50 transition-colors"
+                >
+                  <RotateCcw size={12} />
+                </button>
+              </Tooltip>
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* Reset to theme default */}
-      <div className="pt-2">
-        <Button variant="ghost" size="xs" onClick={handleResetToThemeDefault}>
-          {t('settings.terminal.resetToThemeDefault')}
-        </Button>
+        <p className="text-xs text-fg-dim">
+          {t('settings.terminal.colorsFromTheme')}
+        </p>
       </div>
     </div>
   )

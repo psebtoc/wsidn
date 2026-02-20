@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useConfigStore, applyTheme } from '@renderer/stores/config-store'
-import { getThemePreset } from '@renderer/themes/theme-presets'
-import type { AppConfig, TerminalConfig } from '@renderer/types/project'
+import type { AppConfig, TerminalConfig, TerminalColorOverride } from '@renderer/types/project'
 import Modal from '@renderer/components/ui/Modal'
 import Button from '@renderer/components/ui/Button'
 import GeneralTab from './tabs/GeneralTab'
@@ -26,10 +25,13 @@ export default function AppSettingsModal({ open, onClose }: AppSettingsModalProp
   const [defaultShell, setDefaultShell] = useState(config.defaultShell)
   const [language, setLanguage] = useState<AppConfig['language']>(config.language)
   const [theme, setTheme] = useState(config.theme)
+  const [accentColor, setAccentColor] = useState<string | null>(config.accentColor)
+  const [terminalColors, setTerminalColors] = useState<Record<string, TerminalColorOverride>>(config.terminalColors)
   const [saving, setSaving] = useState(false)
 
-  // Store original theme for cancel revert
+  // Store originals for cancel revert
   const originalThemeRef = useRef(config.theme)
+  const originalAccentRef = useRef(config.accentColor)
 
   // Sync local state when modal opens
   useEffect(() => {
@@ -38,21 +40,29 @@ export default function AppSettingsModal({ open, onClose }: AppSettingsModalProp
       setDefaultShell(config.defaultShell)
       setLanguage(config.language)
       setTheme(config.theme)
+      setAccentColor(config.accentColor)
+      setTerminalColors(config.terminalColors)
       setActiveTab('general')
       originalThemeRef.current = config.theme
+      originalAccentRef.current = config.accentColor
     }
   }, [open, config])
 
-  // Live preview: apply theme immediately when selection changes
+  // Live preview: apply theme + accent immediately when selection changes
   const handleThemeChange = (themeId: string) => {
     setTheme(themeId)
-    applyTheme(themeId)
+    applyTheme(themeId, accentColor)
+  }
+
+  const handleAccentChange = (accentId: string | null) => {
+    setAccentColor(accentId)
+    applyTheme(theme, accentId)
   }
 
   const handleCancel = () => {
-    // Revert to original theme if changed during preview
-    if (theme !== originalThemeRef.current) {
-      applyTheme(originalThemeRef.current)
+    // Revert to original theme+accent if changed during preview
+    if (theme !== originalThemeRef.current || accentColor !== originalAccentRef.current) {
+      applyTheme(originalThemeRef.current, originalAccentRef.current)
     }
     onClose()
   }
@@ -60,21 +70,14 @@ export default function AppSettingsModal({ open, onClose }: AppSettingsModalProp
   const handleSave = async () => {
     setSaving(true)
     try {
-      const patch: Partial<AppConfig> = { defaultShell, language }
-
-      // If theme changed, update terminal bg/fg to theme defaults
-      if (theme !== originalThemeRef.current) {
-        const preset = getThemePreset(theme)
-        patch.theme = theme
-        patch.terminal = {
-          ...terminal,
-          background: preset.colors.terminalBg,
-          foreground: preset.colors.terminalFg,
-        }
-      } else {
-        patch.terminal = terminal
+      const patch: Partial<AppConfig> = {
+        defaultShell,
+        language,
+        accentColor,
+        terminalColors,
+        terminal,
+        theme,
       }
-
       await updateConfig(patch)
       onClose()
     } finally {
@@ -84,6 +87,27 @@ export default function AppSettingsModal({ open, onClose }: AppSettingsModalProp
 
   const updateTerminal = (patch: Partial<TerminalConfig>) => {
     setTerminal((prev) => ({ ...prev, ...patch }))
+  }
+
+  const handleColorChange = (patch: TerminalColorOverride) => {
+    setTerminalColors((prev) => ({
+      ...prev,
+      [theme]: { ...prev[theme], ...patch },
+    }))
+  }
+
+  const handleColorReset = (key: 'background' | 'foreground') => {
+    setTerminalColors((prev) => {
+      const current = { ...prev[theme] }
+      delete current[key]
+      // If no overrides left, remove the theme entry entirely
+      if (Object.keys(current).length === 0) {
+        const next = { ...prev }
+        delete next[theme]
+        return next
+      }
+      return { ...prev, [theme]: current }
+    })
   }
 
   const tabs: { id: SettingsTab; label: string }[] = [
@@ -130,13 +154,18 @@ export default function AppSettingsModal({ open, onClose }: AppSettingsModalProp
           <TerminalTab
             terminal={terminal}
             themeId={theme}
+            colorOverride={terminalColors[theme]}
             onUpdate={updateTerminal}
+            onColorChange={handleColorChange}
+            onColorReset={handleColorReset}
           />
         )}
         {activeTab === 'appearance' && (
           <AppearanceTab
             selectedTheme={theme}
+            selectedAccent={accentColor}
             onSelectTheme={handleThemeChange}
+            onSelectAccent={handleAccentChange}
           />
         )}
       </div>

@@ -182,7 +182,7 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
     <div className="flex h-full w-full">
       {/* Left sidebar group — spacer pushes ribbon + panels below tab bar level */}
       <div className="flex flex-col shrink-0">
-        <div className="h-[35px] bg-base border-b border-b-border-default shrink-0" />
+        <div className="h-[35px] bg-base shrink-0" />
         <div className="flex flex-1 min-h-0">
           <ActivityRibbon activePanel={activePanel} onTogglePanel={handleTogglePanel} />
 
@@ -317,9 +317,9 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
                       isHorizontal
                         ? {
                             left: `calc(${pos * 100}% - 2px)`,
-                            top: `${d.bounds.y * 100}%`,
+                            top: `calc(${d.bounds.y * 100}% + 35px)`,
                             width: '5px',
-                            height: `${d.bounds.h * 100}%`,
+                            height: `calc(${d.bounds.h * 100}% - 35px)`,
                           }
                         : {
                             left: `${d.bounds.x * 100}%`,
@@ -332,12 +332,12 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
                       handleDividerMouseDown(e, d.path, d.direction, d.bounds)
                     }
                   >
-                    {/* Visible 1px line */}
+                    {/* Visible line — horizontal (가로선) hidden until hover, vertical always visible */}
                     <div
-                      className={`absolute bg-border-default transition-colors duration-150 delay-300 group-hover:bg-primary ${
+                      className={`absolute transition-opacity duration-150 ${
                         isHorizontal
-                          ? 'left-[2px] top-0 bottom-0 w-px'
-                          : 'top-[3px] left-0 right-0 h-px'
+                          ? 'left-[2px] top-0 bottom-0 w-px bg-fg-dimmer/70 group-hover:bg-primary'
+                          : 'top-[3px] left-0 right-0 h-px opacity-0 group-hover:opacity-100 bg-primary'
                       }`}
                     />
                   </div>

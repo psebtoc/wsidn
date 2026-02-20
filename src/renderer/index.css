@@ -75,24 +75,6 @@
     --color-accent-hover: 46 158 230;
   }
 
-  /* Solarized Light */
-  [data-theme="solarized-light"] {
-    --color-base: 253 246 227;
-    --color-surface: 238 232 213;
-    --color-elevated: 221 214 193;
-    --color-hover: 208 200 176;
-    --color-fg: 7 54 66;
-    --color-fg-secondary: 88 110 117;
-    --color-fg-muted: 101 123 131;
-    --color-fg-dim: 147 161 161;
-    --color-fg-dimmer: 176 191 191;
-    --color-border: 208 200 176;
-    --color-border-subtle: 221 214 193;
-    --color-border-input: 147 161 161;
-    --color-accent: 38 139 210;
-    --color-accent-hover: 46 158 230;
-  }
-
   /* One Dark */
   [data-theme="one-dark"] {
     --color-base: 30 33 39;
@@ -163,6 +145,27 @@ body {
 
 .tab-scroll::-webkit-scrollbar {
   display: none;
+}
+
+/* Chrome-style tab curves */
+.tab-active::before,
+.tab-active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  width: 10px;
+  height: 10px;
+  pointer-events: none;
+}
+
+.tab-active::before {
+  left: -10px;
+  background: radial-gradient(circle at 0 0, transparent 10px, var(--tab-bg) 10px);
+}
+
+.tab-active::after {
+  right: -10px;
+  background: radial-gradient(circle at 100% 0, transparent 10px, var(--tab-bg) 10px);
 }
 
 /* Claude activity pulse animation */

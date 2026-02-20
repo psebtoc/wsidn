@@ -47,7 +47,7 @@ export default function SessionPanel({
   const totalActive = activeSessions.length
 
   return (
-    <div className="w-72 h-full bg-surface border-r border-border-default/50 flex flex-col select-none">
+    <div className="w-72 h-full bg-surface border-r border-border-default flex flex-col select-none">
       {/* Header */}
       <div className="h-12 px-3 border-b border-border-subtle flex items-center justify-between shrink-0">
         <span className="text-xs font-medium text-fg-secondary uppercase tracking-wider">

@@ -6,6 +6,7 @@ import '@xterm/xterm/css/xterm.css'
 import { parseClaudeTitle } from '@renderer/utils/claude-activity'
 import { useSessionStore } from '@renderer/stores/session-store'
 import { useConfigStore } from '@renderer/stores/config-store'
+import { getThemePreset } from '@renderer/themes/theme-presets'
 
 
 export function useTerminal(
@@ -14,26 +15,39 @@ export function useTerminal(
 ) {
   const termRef = useRef<Terminal | null>(null)
   const terminalConfig = useConfigStore((s) => s.config.terminal)
+  const themeId = useConfigStore((s) => s.config.theme)
+  const terminalColors = useConfigStore((s) => s.config.terminalColors)
 
-  // Apply config changes to existing terminal
+  // Apply config changes to existing terminal (including theme-driven colors)
   useEffect(() => {
     const term = termRef.current
     if (!term) return
+    const preset = getThemePreset(themeId)
+    const overrides = terminalColors[themeId]
+    const bg = overrides?.background ?? preset.colors.terminalBg
+    const fg = overrides?.foreground ?? preset.colors.terminalFg
     term.options.fontSize = terminalConfig.fontSize
     term.options.fontFamily = terminalConfig.fontFamily
     term.options.cursorStyle = terminalConfig.cursorStyle
     term.options.cursorBlink = terminalConfig.cursorBlink
     term.options.scrollback = terminalConfig.scrollback
     term.options.theme = {
-      background: terminalConfig.background,
-      foreground: terminalConfig.foreground,
+      background: bg,
+      foreground: fg,
+      cursor: fg,
+      cursorAccent: bg,
     }
-  }, [terminalConfig])
+  }, [terminalConfig, themeId, terminalColors])
 
   useEffect(() => {
     if (!containerRef.current || !sessionId) return
 
-    const tc = useConfigStore.getState().config.terminal
+    const cfg = useConfigStore.getState().config
+    const tc = cfg.terminal
+    const preset = getThemePreset(cfg.theme)
+    const overrides = cfg.terminalColors[cfg.theme]
+    const initBg = overrides?.background ?? preset.colors.terminalBg
+    const initFg = overrides?.foreground ?? preset.colors.terminalFg
 
     const terminal = new Terminal({
       cursorBlink: tc.cursorBlink,
@@ -41,8 +55,10 @@ export function useTerminal(
       fontFamily: tc.fontFamily,
       cursorStyle: tc.cursorStyle,
       theme: {
-        background: tc.background,
-        foreground: tc.foreground,
+        background: initBg,
+        foreground: initFg,
+        cursor: initFg,
+        cursorAccent: initBg,
       },
       scrollback: tc.scrollback,
     })

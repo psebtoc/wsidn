@@ -13,7 +13,7 @@ export default function PaneStatusBar({ panes, minimizedPanes, onRestore }: Pane
   if (minimizedPanes.length === 0) return null
 
   return (
-    <div className="h-[22px] bg-base border-t border-border-subtle flex items-center gap-px px-1 shrink-0">
+    <div className="h-[22px] bg-base flex items-center gap-px px-1 shrink-0">
       {minimizedPanes.map((mp) => {
         const pane = panes.find((p) => p.id === mp.paneId)
         if (!pane) return null

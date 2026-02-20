@@ -45,12 +45,17 @@ export interface TerminalConfig {
   cursorStyle: 'block' | 'underline' | 'bar'
   cursorBlink: boolean
   scrollback: number
-  background: string
-  foreground: string
+}
+
+export interface TerminalColorOverride {
+  background?: string
+  foreground?: string
 }
 
 export interface AppConfig {
   theme: string
+  accentColor: string | null
+  terminalColors: Record<string, TerminalColorOverride>
   defaultShell: string
   terminal: TerminalConfig
   language: 'ko' | 'en'

@@ -50,7 +50,11 @@
   "settings.lang.en": "English",
   "settings.appearance.theme": "Theme",
   "settings.appearance.themeDescription": "Choose a color theme for the entire app.",
-  "settings.terminal.resetToThemeDefault": "Reset to theme default",
+  "settings.appearance.accentColor": "Accent Color",
+  "settings.appearance.accentDescription": "Choose an accent color for buttons, selections, and highlights.",
+  "settings.appearance.accentDefault": "Default",
+  "settings.terminal.colorsFromTheme": "Colors default to the selected theme. Custom values override the theme.",
+  "settings.terminal.resetToTheme": "Reset to theme default",
 
   "projectSettings.title": "Project Settings",
   "projectSettings.name": "Name",

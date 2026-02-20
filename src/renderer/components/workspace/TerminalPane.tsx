@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { useTerminal } from '@renderer/hooks/useTerminal'
 import { useConfigStore } from '@renderer/stores/config-store'
+import { getThemePreset } from '@renderer/themes/theme-presets'
 
 interface TerminalPaneProps {
   sessionId: string
@@ -8,7 +9,9 @@ interface TerminalPaneProps {
 
 export default function TerminalPane({ sessionId }: TerminalPaneProps) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const bg = useConfigStore((s) => s.config.terminal.background)
+  const themeId = useConfigStore((s) => s.config.theme)
+  const terminalColors = useConfigStore((s) => s.config.terminalColors)
+  const bg = terminalColors[themeId]?.background ?? getThemePreset(themeId).colors.terminalBg
   useTerminal(sessionId, containerRef)
 
   return (

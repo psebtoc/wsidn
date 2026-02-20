@@ -36,7 +36,7 @@ export default function ActivityRibbon({ activePanel, onTogglePanel }: ActivityR
   const { t } = useTranslation()
 
   return (
-    <div className="w-12 h-full bg-surface border-r border-border-default/50 flex flex-col items-center py-2 gap-1 shrink-0">
+    <div className="w-12 h-full bg-surface border-r border-border-default flex flex-col items-center py-2 gap-1 shrink-0">
       {PANELS.map((p) => (
         <Tooltip key={p.id} content={t(p.tooltip)} side="right">
           <button

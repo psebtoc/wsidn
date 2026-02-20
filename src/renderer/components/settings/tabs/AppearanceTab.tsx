@@ -1,10 +1,12 @@
 import { useTranslation } from 'react-i18next'
 import { Check } from 'lucide-react'
-import { THEME_PRESETS, type ThemePreset } from '@renderer/themes/theme-presets'
+import { THEME_PRESETS, ACCENT_COLORS, getThemePreset, type ThemePreset } from '@renderer/themes/theme-presets'
 
 interface AppearanceTabProps {
   selectedTheme: string
+  selectedAccent: string | null
   onSelectTheme: (themeId: string) => void
+  onSelectAccent: (accentId: string | null) => void
 }
 
 function ThemeCard({ preset, isSelected, onSelect }: { preset: ThemePreset; isSelected: boolean; onSelect: () => void }) {
@@ -48,11 +50,39 @@ function ThemeCard({ preset, isSelected, onSelect }: { preset: ThemePreset; isSe
   )
 }
 
-export default function AppearanceTab({ selectedTheme, onSelectTheme }: AppearanceTabProps) {
+function AccentSwatch({
+  color,
+  isSelected,
+  onSelect,
+}: {
+  color: string
+  isSelected: boolean
+  onSelect: () => void
+}) {
+  return (
+    <button
+      onClick={onSelect}
+      className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
+        isSelected ? 'ring-2 ring-offset-2 ring-offset-surface' : 'hover:scale-110'
+      }`}
+      style={{
+        backgroundColor: color,
+        ...(isSelected ? { ringColor: color } : {}),
+      }}
+      title={color}
+    >
+      {isSelected && <Check size={14} color="#fff" strokeWidth={3} />}
+    </button>
+  )
+}
+
+export default function AppearanceTab({ selectedTheme, selectedAccent, onSelectTheme, onSelectAccent }: AppearanceTabProps) {
   const { t } = useTranslation()
+  const currentThemePreset = getThemePreset(selectedTheme)
 
   return (
     <div>
+      {/* Theme presets */}
       <h3 className="text-xs font-medium text-fg-muted uppercase tracking-wider mb-2">
         {t('settings.appearance.theme')}
       </h3>
@@ -67,6 +97,43 @@ export default function AppearanceTab({ selectedTheme, onSelectTheme }: Appearan
             preset={preset}
             isSelected={selectedTheme === preset.id}
             onSelect={() => onSelectTheme(preset.id)}
+          />
+        ))}
+      </div>
+
+      {/* Accent color picker */}
+      <h3 className="text-xs font-medium text-fg-muted uppercase tracking-wider mb-2 mt-6">
+        {t('settings.appearance.accentColor')}
+      </h3>
+      <p className="text-xs text-fg-dim mb-4">
+        {t('settings.appearance.accentDescription')}
+      </p>
+
+      <div className="flex items-center gap-2 flex-wrap">
+        {/* Default (theme's built-in accent) */}
+        <button
+          onClick={() => onSelectAccent(null)}
+          className={`h-7 px-2.5 rounded-full text-[11px] font-medium flex items-center gap-1.5 transition-all ${
+            selectedAccent === null
+              ? 'ring-2 ring-offset-2 ring-offset-surface ring-primary text-fg'
+              : 'text-fg-muted hover:text-fg-secondary'
+          }`}
+          style={{
+            backgroundColor: currentThemePreset.colors.accent,
+            color: '#fff',
+          }}
+        >
+          {selectedAccent === null && <Check size={12} strokeWidth={3} />}
+          {t('settings.appearance.accentDefault')}
+        </button>
+
+        {/* Accent color swatches */}
+        {ACCENT_COLORS.map((accent) => (
+          <AccentSwatch
+            key={accent.id}
+            color={accent.value}
+            isSelected={selectedAccent === accent.id}
+            onSelect={() => onSelectAccent(accent.id)}
           />
         ))}
       </div>
