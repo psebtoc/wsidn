@@ -16,7 +16,7 @@ export default function App(): JSX.Element {
   }, [loadProjects, loadConfig])
 
   return (
-    <div className="h-screen w-screen bg-neutral-900 text-white flex flex-col overflow-hidden">
+    <div className="h-screen w-screen bg-surface text-fg flex flex-col overflow-hidden">
       <TitleBar />
       <div className="flex-1 min-h-0">
         {activeProjectId ? (

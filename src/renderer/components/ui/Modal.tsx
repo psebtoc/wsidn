@@ -28,7 +28,7 @@ export default function Modal({ open, onClose, width = 'w-[480px]', portal, clas
       onClick={onClose}
     >
       <div
-        className={`bg-neutral-800 rounded-lg border border-neutral-700 p-6 shadow-xl max-h-[80vh] overflow-y-auto ${width} ${className}`}
+        className={`bg-elevated rounded-lg border border-border-default p-6 shadow-xl max-h-[80vh] overflow-y-auto ${width} ${className}`}
         onClick={(e) => e.stopPropagation()}
       >
         {children}

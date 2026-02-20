@@ -15,10 +15,10 @@ const SIZE_STYLES: Record<NonNullable<IconButtonProps['size']>, string> = {
 }
 
 const HOVER_STYLES: Record<NonNullable<IconButtonProps['hoverColor']>, string> = {
-  default: 'text-neutral-500 hover:text-neutral-300',
-  danger: 'text-neutral-500 hover:text-red-400',
-  warning: 'text-neutral-500 hover:text-yellow-400',
-  success: 'text-neutral-500 hover:text-green-400',
+  default: 'text-fg-dim hover:text-fg-secondary',
+  danger: 'text-fg-dim hover:text-red-400',
+  warning: 'text-fg-dim hover:text-yellow-400',
+  success: 'text-fg-dim hover:text-green-400',
 }
 
 const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(function IconButton(
@@ -29,7 +29,7 @@ const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(function IconB
     <button
       ref={ref}
       className={`flex items-center justify-center rounded transition-colors ${SIZE_STYLES[size]} ${
-        active ? 'text-white bg-neutral-700' : HOVER_STYLES[hoverColor]
+        active ? 'text-fg bg-hover' : HOVER_STYLES[hoverColor]
       } ${showOnGroupHover ? 'opacity-0 group-hover:opacity-100 transition-opacity' : ''} ${className}`}
       {...rest}
     >

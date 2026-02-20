@@ -47,13 +47,13 @@ export default function SessionPanel({
   const totalActive = activeSessions.length
 
   return (
-    <div className="w-72 h-full bg-neutral-900 border-r border-neutral-700/50 flex flex-col select-none">
+    <div className="w-72 h-full bg-surface border-r border-border-default/50 flex flex-col select-none">
       {/* Header */}
-      <div className="h-12 px-3 border-b border-neutral-800 flex items-center justify-between shrink-0">
-        <span className="text-xs font-medium text-neutral-300 uppercase tracking-wider">
+      <div className="h-12 px-3 border-b border-border-subtle flex items-center justify-between shrink-0">
+        <span className="text-xs font-medium text-fg-secondary uppercase tracking-wider">
           {t('session.title')}
         </span>
-        <span className="text-[10px] text-neutral-500">
+        <span className="text-[10px] text-fg-dim">
           {t('session.activeCount', { count: totalActive })}
         </span>
       </div>
@@ -61,7 +61,7 @@ export default function SessionPanel({
       {/* Body */}
       <div className="flex-1 overflow-y-auto px-1 py-2 space-y-1">
         {panes.length === 0 ? (
-          <p className="text-[10px] text-neutral-600 px-2 py-2">{t('session.noActiveSessions')}</p>
+          <p className="text-[10px] text-fg-dimmer px-2 py-2">{t('session.noActiveSessions')}</p>
         ) : (
           <>
             {/* Current project panes */}
@@ -102,7 +102,6 @@ export default function SessionPanel({
                 </div>
               )
             })}
-
           </>
         )}
       </div>
@@ -151,8 +150,8 @@ function PaneHeader({
             if (e.key === 'Escape') onCancelEdit()
           }}
           onBlur={() => onFinishEdit(editValue)}
-          className="w-full text-[10px] font-medium text-neutral-300 uppercase tracking-wider
-                     bg-neutral-800 border border-neutral-600 rounded px-1 py-0.5 outline-none
+          className="w-full text-[10px] font-medium text-fg-secondary uppercase tracking-wider
+                     bg-elevated border border-border-input rounded px-1 py-0.5 outline-none
                      focus:border-primary"
         />
       </div>
@@ -166,7 +165,7 @@ function PaneHeader({
         e.stopPropagation()
         onStartEdit()
       }}
-      className="w-full text-[10px] font-medium text-neutral-500 uppercase tracking-wider px-2 py-1 flex items-center gap-1 hover:text-neutral-400 transition-colors"
+      className="w-full text-[10px] font-medium text-fg-dim uppercase tracking-wider px-2 py-1 flex items-center gap-1 hover:text-fg-muted transition-colors"
     >
       <span className="text-[8px]">{isCollapsed ? '\u25B6' : '\u25BC'}</span>
       {pane.name}
@@ -189,7 +188,7 @@ function SessionCard({
   // 3-state: no Claude = neutral, Claude idle = orange static, Claude working = orange pulse
   const isWorking = activity?.status === 'working'
 
-  let dotClass = 'bg-neutral-500' // no Claude
+  let dotClass = 'bg-fg-dim' // no Claude
   let dotStyle: React.CSSProperties | undefined
 
   if (session.claudeSessionId) {
@@ -203,7 +202,7 @@ function SessionCard({
     <div
       onClick={onClick}
       className={`px-2 py-1.5 rounded group transition-colors ${
-        onClick ? 'cursor-pointer hover:bg-neutral-800/50' : 'opacity-70'
+        onClick ? 'cursor-pointer hover:bg-elevated/50' : 'opacity-70'
       }`}
     >
       <div className="flex items-center gap-1.5">
@@ -211,14 +210,14 @@ function SessionCard({
           className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotClass}`}
           style={dotStyle}
         />
-        <p className="text-xs text-white truncate flex-1">{session.name}</p>
+        <p className="text-xs text-fg truncate flex-1">{session.name}</p>
         {onRefresh && session.claudeSessionId && (
           <button
             onClick={(e) => {
               e.stopPropagation()
               onRefresh()
             }}
-            className="w-5 h-5 flex items-center justify-center rounded opacity-0 group-hover:opacity-100 transition-opacity text-neutral-400 hover:text-green-400 hover:bg-neutral-700 shrink-0"
+            className="w-5 h-5 flex items-center justify-center rounded opacity-0 group-hover:opacity-100 transition-opacity text-fg-muted hover:text-green-400 hover:bg-hover shrink-0"
           >
             <RefreshCw size={10} />
           </button>

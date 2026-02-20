@@ -50,7 +50,7 @@ export interface TerminalConfig {
 }
 
 export interface AppConfig {
-  theme: 'dark' | 'light'
+  theme: string
   defaultShell: string
   terminal: TerminalConfig
   language: 'ko' | 'en'

@@ -32,10 +32,10 @@ export default function TitleBar() {
 
   return (
     <div
-      className="flex items-center h-8 bg-neutral-950 select-none shrink-0"
+      className="flex items-center h-8 bg-base select-none shrink-0"
       style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
     >
-      <div className="px-3 text-xs font-semibold text-neutral-400 tracking-wide">WSIDN</div>
+      <div className="px-3 text-xs font-semibold text-fg-muted tracking-wide">WSIDN</div>
 
       {activeProject && (
         <div
@@ -45,15 +45,15 @@ export default function TitleBar() {
         >
           <button
             onClick={() => setDropdownOpen((v) => !v)}
-            className="flex items-center gap-1 px-2 py-0.5 rounded text-xs text-neutral-300
-                       hover:bg-neutral-800 transition-colors"
+            className="flex items-center gap-1 px-2 py-0.5 rounded text-xs text-fg-secondary
+                       hover:bg-elevated transition-colors"
           >
             <span className="truncate max-w-[160px]">{activeProject.name}</span>
             <ChevronDown size={10} className={`transition-transform duration-150 ${dropdownOpen ? 'rotate-180' : ''}`} />
           </button>
 
           {dropdownOpen && (
-            <div className="absolute top-full left-0 mt-1 w-52 bg-neutral-800 border border-neutral-700 rounded-md shadow-xl z-50 py-1">
+            <div className="absolute top-full left-0 mt-1 w-52 bg-elevated border border-border-default rounded-md shadow-xl z-50 py-1">
               {projects.map((p) => (
                 <button
                   key={p.id}
@@ -63,21 +63,21 @@ export default function TitleBar() {
                   }}
                   className={`w-full text-left px-3 py-1.5 text-xs transition-colors truncate ${
                     p.id === activeProjectId
-                      ? 'bg-neutral-700 text-white'
-                      : 'text-neutral-300 hover:bg-neutral-700/50'
+                      ? 'bg-hover text-fg'
+                      : 'text-fg-secondary hover:bg-hover/50'
                   }`}
                 >
                   {p.name}
                 </button>
               ))}
-              <div className="border-t border-neutral-700 mt-1 pt-1">
+              <div className="border-t border-border-default mt-1 pt-1">
                 <button
                   onClick={() => {
                     clearActiveProject()
                     setDropdownOpen(false)
                   }}
-                  className="w-full text-left px-3 py-1.5 text-xs text-neutral-400 hover:text-white
-                             hover:bg-neutral-700/50 transition-colors flex items-center gap-1.5"
+                  className="w-full text-left px-3 py-1.5 text-xs text-fg-muted hover:text-fg
+                             hover:bg-hover/50 transition-colors flex items-center gap-1.5"
                 >
                   <ArrowLeft size={10} />
                   {t('titleBar.backToProjects')}
@@ -94,7 +94,7 @@ export default function TitleBar() {
       <div style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
         <button
           onClick={() => setSettingsOpen(true)}
-          className="flex items-center justify-center w-8 h-full text-neutral-500 hover:text-neutral-300 transition-colors"
+          className="flex items-center justify-center w-8 h-full text-fg-dim hover:text-fg-secondary transition-colors"
         >
           <Settings size={14} />
         </button>

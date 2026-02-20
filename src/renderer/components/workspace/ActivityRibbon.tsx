@@ -36,15 +36,15 @@ export default function ActivityRibbon({ activePanel, onTogglePanel }: ActivityR
   const { t } = useTranslation()
 
   return (
-    <div className="w-12 h-full bg-neutral-900 border-r border-neutral-700/50 flex flex-col items-center py-2 gap-1 shrink-0">
+    <div className="w-12 h-full bg-surface border-r border-border-default/50 flex flex-col items-center py-2 gap-1 shrink-0">
       {PANELS.map((p) => (
         <Tooltip key={p.id} content={t(p.tooltip)} side="right">
           <button
             onClick={() => onTogglePanel(p.id)}
             className={`w-10 h-10 flex items-center justify-center rounded transition-colors ${
               activePanel === p.id
-                ? 'bg-neutral-700 text-white'
-                : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800'
+                ? 'bg-hover text-fg'
+                : 'text-fg-dim hover:text-fg-secondary hover:bg-elevated'
             }`}
           >
             {p.icon}
@@ -61,8 +61,8 @@ export default function ActivityRibbon({ activePanel, onTogglePanel }: ActivityR
           onClick={() => onTogglePanel('projectSettings')}
           className={`w-10 h-10 flex items-center justify-center rounded transition-colors ${
             activePanel === 'projectSettings'
-              ? 'bg-neutral-700 text-white'
-              : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800'
+              ? 'bg-hover text-fg'
+              : 'text-fg-dim hover:text-fg-secondary hover:bg-elevated'
           }`}
         >
           <Settings size={20} />

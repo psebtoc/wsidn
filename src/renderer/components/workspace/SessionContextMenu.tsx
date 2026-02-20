@@ -160,15 +160,15 @@ export default function SessionContextMenu({
   const hasResumable = resumableSessions.length > 0
 
   const itemClass =
-    'w-full text-left px-3 py-1.5 text-xs text-neutral-200 hover:bg-neutral-700/60 transition-colors rounded-sm flex items-center justify-between'
+    'w-full text-left px-3 py-1.5 text-xs text-fg-secondary hover:bg-hover/60 transition-colors rounded-sm flex items-center justify-between'
   const disabledClass =
-    'w-full text-left px-3 py-1.5 text-xs text-neutral-500 cursor-default rounded-sm flex items-center justify-between'
+    'w-full text-left px-3 py-1.5 text-xs text-fg-dim cursor-default rounded-sm flex items-center justify-between'
 
   return createPortal(
     <>
       <div
         ref={menuRef}
-        className="fixed z-[9999] min-w-[220px] py-1 bg-neutral-800 border border-neutral-700 rounded-md shadow-xl shadow-black/50"
+        className="fixed z-[9999] min-w-[220px] py-1 bg-elevated border border-border-default rounded-md shadow-xl shadow-black/50"
         style={{
           top: pos.top,
           left: pos.left,
@@ -187,14 +187,14 @@ export default function SessionContextMenu({
         >
           claude --skip-permissions
         </button>
-        <div className="h-px bg-neutral-700 my-1 mx-2" />
+        <div className="h-px bg-border-default my-1 mx-2" />
         <button
           className={itemClass}
           onClick={() => { onSelectWorktree(); onClose() }}
         >
           {t('contextMenu.worktree')}
         </button>
-        <div className="h-px bg-neutral-700 my-1 mx-2" />
+        <div className="h-px bg-border-default my-1 mx-2" />
         <div
           onMouseEnter={handleResumeEnter}
           onMouseLeave={handleResumeLeave}
@@ -213,7 +213,7 @@ export default function SessionContextMenu({
               ref={submenuRef}
               onMouseEnter={handleSubmenuEnter}
               onMouseLeave={handleSubmenuLeave}
-              className="fixed z-[10000] min-w-[240px] max-w-[340px] max-h-[360px] flex flex-col bg-neutral-800 border border-neutral-700 rounded-md shadow-xl shadow-black/50"
+              className="fixed z-[10000] min-w-[240px] max-w-[340px] max-h-[360px] flex flex-col bg-elevated border border-border-default rounded-md shadow-xl shadow-black/50"
               style={{
                 top: (() => {
                   const el = menuRef.current?.querySelector('[data-resume-trigger]')
@@ -230,15 +230,15 @@ export default function SessionContextMenu({
             >
               {/* Search field */}
               <div className="px-2 pt-2 pb-1 shrink-0">
-                <div className="flex items-center gap-1.5 px-2 py-1 bg-neutral-900 border border-neutral-600 rounded text-xs">
-                  <Search size={11} className="text-neutral-500 shrink-0" />
+                <div className="flex items-center gap-1.5 px-2 py-1 bg-surface border border-border-input rounded text-xs">
+                  <Search size={11} className="text-fg-dim shrink-0" />
                   <input
                     ref={searchInputRef}
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder={t('contextMenu.searchResume', 'Search...')}
-                    className="flex-1 bg-transparent text-neutral-200 placeholder-neutral-500 outline-none min-w-0"
+                    className="flex-1 bg-transparent text-fg-secondary placeholder-fg-dim outline-none min-w-0"
                   />
                 </div>
               </div>
@@ -246,24 +246,24 @@ export default function SessionContextMenu({
               {/* Session list */}
               <div className="overflow-y-auto py-1 min-h-0">
                 {filteredSessions.length === 0 ? (
-                  <div className="px-3 py-2 text-[10px] text-neutral-500 text-center">
+                  <div className="px-3 py-2 text-[10px] text-fg-dim text-center">
                     {t('contextMenu.noResults', 'No results')}
                   </div>
                 ) : (
                   filteredSessions.map((s) => (
                     <button
                       key={s.claudeSessionId}
-                      className="w-full text-left px-3 py-1.5 hover:bg-neutral-700/60 transition-colors rounded-sm"
+                      className="w-full text-left px-3 py-1.5 hover:bg-hover/60 transition-colors rounded-sm"
                       onClick={() => { onResume(s.claudeSessionId); onClose() }}
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs text-neutral-200 truncate">{s.name}</span>
-                        <span className="text-[10px] text-neutral-500 shrink-0 tabular-nums">
+                        <span className="text-xs text-fg-secondary truncate">{s.name}</span>
+                        <span className="text-[10px] text-fg-dim shrink-0 tabular-nums">
                           {formatClosedAt(s.closedAt)}
                         </span>
                       </div>
                       {s.claudeLastTitle && (
-                        <span className="block text-[10px] text-neutral-500 truncate mt-0.5">
+                        <span className="block text-[10px] text-fg-dim truncate mt-0.5">
                           {s.claudeLastTitle}
                         </span>
                       )}

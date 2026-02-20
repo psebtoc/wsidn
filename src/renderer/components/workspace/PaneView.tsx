@@ -4,6 +4,7 @@ import { Plus, X, ChevronDown, Columns2, Rows2, SquareCheckBig, Minus } from 'lu
 import type { Pane, Session, SplitDirection, ResumeHistoryEntry } from '@renderer/types/project'
 import { useDndStore } from '@renderer/stores/dnd-store'
 import { useSessionStore } from '@renderer/stores/session-store'
+import { useConfigStore } from '@renderer/stores/config-store'
 import Tooltip from '@renderer/components/ui/Tooltip'
 import TodoPanel from '@renderer/components/todo/TodoPanel'
 import TerminalPane from './TerminalPane'
@@ -71,6 +72,7 @@ export default function PaneView({
   const moveSessionToPane = useSessionStore((s) => s.moveSessionToPane)
   const moveSessionToNewSplit = useSessionStore((s) => s.moveSessionToNewSplit)
   const renameSession = useSessionStore((s) => s.renameSession)
+  const terminalBg = useConfigStore((s) => s.config.terminal.background)
 
   useEffect(() => {
     if (editingSessionId) {
@@ -353,7 +355,7 @@ export default function PaneView({
     <div className="w-full h-full flex flex-col" onClick={onFocus}>
       {/* Tab bar */}
       <div
-        className="flex h-[35px] bg-neutral-950 shrink-0 relative"
+        className="flex h-[35px] bg-base shrink-0 relative"
         onMouseEnter={() => setTabBarHovered(true)}
         onMouseLeave={() => setTabBarHovered(false)}
       >
@@ -371,9 +373,10 @@ export default function PaneView({
                   ref={isActive ? activeTabRef as React.Ref<HTMLDivElement> : undefined}
                   className={`relative flex items-center px-1 shrink-0 ${
                     isActive
-                      ? `border border-neutral-700 border-b-[#1a1a1a] bg-[#1a1a1a] ${isFocused ? 'border-t-primary' : ''} ${index === 0 ? 'border-l-0' : ''}`
-                      : 'border-b border-b-neutral-700 bg-neutral-800/40'
+                      ? `border border-border-default ${isFocused ? 'border-t-primary' : ''} ${index === 0 ? 'border-l-0' : ''}`
+                      : 'border-b border-b-border-default bg-elevated/40'
                   }`}
+                  style={isActive ? { borderBottomColor: terminalBg, backgroundColor: terminalBg } : undefined}
                 >
                   <input
                     ref={editInputRef}
@@ -390,7 +393,7 @@ export default function PaneView({
                       renameSession(session.id, editValue)
                       setEditingSessionId(null)
                     }}
-                    className="text-xs text-neutral-200 bg-transparent border-none outline-none w-[100px]"
+                    className="text-xs text-fg-secondary bg-transparent border-none outline-none w-[100px]"
                   />
                 </div>
               )
@@ -419,9 +422,10 @@ export default function PaneView({
                   isDragged ? 'opacity-50' : ''
                 } ${
                   isActive
-                    ? `border border-neutral-700 border-b-[#1a1a1a] bg-[#1a1a1a] text-neutral-200 ${isFocused ? 'border-t-primary' : ''} ${index === 0 ? 'border-l-0' : ''}`
-                    : 'border-b border-b-neutral-700 text-neutral-500 hover:text-neutral-400 hover:bg-neutral-800/40'
+                    ? `border border-border-default text-fg-secondary ${isFocused ? 'border-t-primary' : ''} ${index === 0 ? 'border-l-0' : ''}`
+                    : 'border-b border-b-border-default text-fg-dim hover:text-fg-muted hover:bg-elevated/40'
                 }`}
+                style={isActive ? { borderBottomColor: terminalBg, backgroundColor: terminalBg } : undefined}
               >
                 {renderTabDropIndicator(index, tabDropSide)}
                 {session.claudeSessionId && (
@@ -433,7 +437,7 @@ export default function PaneView({
                     e.stopPropagation()
                     onCloseSession(session.id)
                   }}
-                  className="p-0.5 rounded hover:bg-neutral-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="p-0.5 rounded hover:bg-hover opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   <X size={8} />
                 </span>
@@ -444,14 +448,14 @@ export default function PaneView({
 
         {/* Spacer — fills remaining width with border-b, also a drop target */}
         <div
-          className="flex-1 border-b border-b-neutral-700"
+          className="flex-1 border-b border-b-border-default"
           onDragOver={handleSpacerDragOver}
           onDragLeave={handleSpacerDragLeave}
           onDrop={handleSpacerDrop}
         />
 
         {/* Actions area */}
-        <div className="flex items-center gap-0.5 px-1 shrink-0 border-b border-b-neutral-700">
+        <div className="flex items-center gap-0.5 px-1 shrink-0 border-b border-b-border-default">
           {/* Split button: [+] [▾] */}
           <div className="flex items-center">
             <Tooltip content={t('pane.newTab')} side="bottom">
@@ -460,8 +464,8 @@ export default function PaneView({
                   e.stopPropagation()
                   onCreateSession()
                 }}
-                className="flex items-center justify-center w-5 h-6 rounded-l text-neutral-500
-                           hover:text-neutral-300 hover:bg-neutral-700/50 transition-colors"
+                className="flex items-center justify-center w-5 h-6 rounded-l text-fg-dim
+                           hover:text-fg-secondary hover:bg-hover/50 transition-colors"
               >
                 <Plus size={12} />
               </button>
@@ -474,22 +478,22 @@ export default function PaneView({
                   setContextMenuAnchor(rect)
                   setShowContextMenu((v) => !v)
                 }}
-                className="flex items-center justify-center w-4 h-6 rounded-r text-neutral-500
-                           hover:text-neutral-300 hover:bg-neutral-700/50 transition-colors"
+                className="flex items-center justify-center w-4 h-6 rounded-r text-fg-dim
+                           hover:text-fg-secondary hover:bg-hover/50 transition-colors"
               >
                 <ChevronDown size={8} />
               </button>
             </Tooltip>
           </div>
-          <div className="w-px h-3.5 bg-neutral-700/50 mx-0.5" />
+          <div className="w-px h-3.5 bg-border-default/50 mx-0.5" />
           <Tooltip content={t('pane.splitRight')} side="bottom">
             <button
               onClick={(e) => {
                 e.stopPropagation()
                 onSplit('horizontal')
               }}
-              className="flex items-center justify-center w-6 h-6 rounded text-neutral-500
-                         hover:text-neutral-300 hover:bg-neutral-700/50 transition-colors"
+              className="flex items-center justify-center w-6 h-6 rounded text-fg-dim
+                         hover:text-fg-secondary hover:bg-hover/50 transition-colors"
             >
               <Columns2 size={12} />
             </button>
@@ -500,13 +504,13 @@ export default function PaneView({
                 e.stopPropagation()
                 onSplit('vertical')
               }}
-              className="flex items-center justify-center w-6 h-6 rounded text-neutral-500
-                         hover:text-neutral-300 hover:bg-neutral-700/50 transition-colors"
+              className="flex items-center justify-center w-6 h-6 rounded text-fg-dim
+                         hover:text-fg-secondary hover:bg-hover/50 transition-colors"
             >
               <Rows2 size={12} />
             </button>
           </Tooltip>
-          <div className="w-px h-3.5 bg-neutral-700/50 mx-0.5" />
+          <div className="w-px h-3.5 bg-border-default/50 mx-0.5" />
           {/* TODO toggle */}
           <Tooltip content={t('pane.toggleTodo')} side="bottom">
             <button
@@ -516,14 +520,14 @@ export default function PaneView({
               }}
               className={`flex items-center justify-center w-6 h-6 rounded transition-colors ${
                 showTodo
-                  ? 'text-primary bg-neutral-700/50'
-                  : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-700/50'
+                  ? 'text-primary bg-hover/50'
+                  : 'text-fg-dim hover:text-fg-secondary hover:bg-hover/50'
               }`}
             >
               <SquareCheckBig size={12} />
             </button>
           </Tooltip>
-          {isSplit && <div className="w-px h-3.5 bg-neutral-700/50 mx-0.5" />}
+          {isSplit && <div className="w-px h-3.5 bg-border-default/50 mx-0.5" />}
           {isSplit && onMinimize && (
             <Tooltip content={t('pane.minimizePane')} side="bottom">
               <button
@@ -531,8 +535,8 @@ export default function PaneView({
                   e.stopPropagation()
                   onMinimize()
                 }}
-                className="flex items-center justify-center w-6 h-6 rounded text-neutral-500
-                           hover:text-yellow-400 hover:bg-neutral-700/50 transition-colors"
+                className="flex items-center justify-center w-6 h-6 rounded text-fg-dim
+                           hover:text-yellow-400 hover:bg-hover/50 transition-colors"
               >
                 <Minus size={10} />
               </button>
@@ -545,8 +549,8 @@ export default function PaneView({
                   e.stopPropagation()
                   onClosePane()
                 }}
-                className="flex items-center justify-center w-6 h-6 rounded text-neutral-500
-                           hover:text-red-400 hover:bg-neutral-700/50 transition-colors"
+                className="flex items-center justify-center w-6 h-6 rounded text-fg-dim
+                           hover:text-red-400 hover:bg-hover/50 transition-colors"
               >
                 <X size={10} />
               </button>
@@ -561,7 +565,7 @@ export default function PaneView({
             style={{ width: scrollInfo.clientWidth }}
           >
             <div
-              className="absolute h-full rounded-full bg-white/20 hover:bg-white/40 transition-colors"
+              className="absolute h-full rounded-full bg-fg/20 hover:bg-fg/40 transition-colors"
               style={thumbStyle}
               onMouseDown={handleThumbMouseDown}
             />
@@ -574,7 +578,8 @@ export default function PaneView({
         {/* Terminal with drop zone overlay */}
         <div
           ref={contentRef}
-          className="flex-1 relative min-w-0 bg-[#1a1a1a]"
+          className="flex-1 relative min-w-0"
+          style={{ backgroundColor: terminalBg }}
         >
           {paneSessions.map((session) => (
             <div
@@ -604,8 +609,8 @@ export default function PaneView({
           activeSessionId ? (
             <TodoPanel sessionId={activeSessionId} />
           ) : (
-            <div className="w-64 h-full bg-neutral-900 border-l border-neutral-700/50 flex items-center justify-center">
-              <p className="text-xs text-neutral-500">{t('pane.noActiveSession')}</p>
+            <div className="w-64 h-full bg-surface border-l border-border-default/50 flex items-center justify-center">
+              <p className="text-xs text-fg-dim">{t('pane.noActiveSession')}</p>
             </div>
           )
         )}

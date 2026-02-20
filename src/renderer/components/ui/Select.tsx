@@ -11,7 +11,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select(
   return (
     <select
       ref={ref}
-      className={`px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white text-sm
+      className={`px-3 py-2 bg-surface border border-border-input rounded text-fg text-sm
                   focus:outline-none focus:border-primary ${fullWidth ? 'w-full' : ''} ${className}`}
       {...rest}
     >
