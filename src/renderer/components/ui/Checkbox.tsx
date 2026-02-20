@@ -12,7 +12,7 @@ export default function Checkbox({ state, onChange, className = '' }: CheckboxPr
                   transition-colors ${
                     state === 'checked'
                       ? 'bg-primary border-primary'
-                      : 'border-neutral-500 hover:border-neutral-300'
+                      : 'border-fg-dim hover:border-fg-secondary'
                   } ${className}`}
     >
       {state === 'checked' && (

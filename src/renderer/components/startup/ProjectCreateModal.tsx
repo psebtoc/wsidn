@@ -67,11 +67,11 @@ export default function ProjectCreateModal({ open, onClose }: ProjectCreateModal
   return (
     <Modal open={open} onClose={onClose}>
       <div onKeyDown={handleKeyDown}>
-        <h2 className="text-lg font-semibold text-white mb-4">{t('projectCreate.title')}</h2>
+        <h2 className="text-lg font-semibold text-fg mb-4">{t('projectCreate.title')}</h2>
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm text-neutral-400 mb-1">{t('projectCreate.nameLabel')}</label>
+            <label className="block text-sm text-fg-muted mb-1">{t('projectCreate.nameLabel')}</label>
             <TextInput
               fullWidth
               autoFocus
@@ -82,7 +82,7 @@ export default function ProjectCreateModal({ open, onClose }: ProjectCreateModal
           </div>
 
           <div>
-            <label className="block text-sm text-neutral-400 mb-1">{t('projectCreate.directoryLabel')}</label>
+            <label className="block text-sm text-fg-muted mb-1">{t('projectCreate.directoryLabel')}</label>
             <div className="flex gap-2">
               <TextInput
                 fullWidth

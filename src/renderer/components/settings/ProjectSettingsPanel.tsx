@@ -36,10 +36,10 @@ export default function ProjectSettingsPanel({ projectId }: ProjectSettingsPanel
   }
 
   return (
-    <div className="w-72 h-full bg-neutral-900 border-l border-neutral-700/50 flex flex-col select-none shrink-0">
+    <div className="w-72 h-full bg-surface border-l border-border-default/50 flex flex-col select-none shrink-0">
       {/* Header */}
-      <div className="h-12 px-3 border-b border-neutral-800 flex items-center shrink-0">
-        <span className="text-xs font-medium text-neutral-300 uppercase tracking-wider">
+      <div className="h-12 px-3 border-b border-border-subtle flex items-center shrink-0">
+        <span className="text-xs font-medium text-fg-secondary uppercase tracking-wider">
           {t('projectSettings.title')}
         </span>
       </div>
@@ -47,18 +47,18 @@ export default function ProjectSettingsPanel({ projectId }: ProjectSettingsPanel
       <div className="flex-1 overflow-y-auto px-3 py-3">
         {/* Project Info */}
         <div className="mb-4">
-          <label className="block text-xs text-neutral-500 mb-1">{t('projectSettings.name')}</label>
-          <p className="text-sm text-neutral-300 truncate">{project.name}</p>
+          <label className="block text-xs text-fg-dim mb-1">{t('projectSettings.name')}</label>
+          <p className="text-sm text-fg-secondary truncate">{project.name}</p>
         </div>
 
         <div className="mb-5">
-          <label className="block text-xs text-neutral-500 mb-1">{t('projectSettings.path')}</label>
-          <p className="text-xs text-neutral-400 break-all">{project.path}</p>
+          <label className="block text-xs text-fg-dim mb-1">{t('projectSettings.path')}</label>
+          <p className="text-xs text-fg-muted break-all">{project.path}</p>
         </div>
 
         {/* Worktree Init Script */}
         <div>
-          <label className="block text-xs text-neutral-400 mb-1.5">
+          <label className="block text-xs text-fg-muted mb-1.5">
             {t('projectSettings.worktreeInitScript')}
           </label>
           <textarea
@@ -69,18 +69,18 @@ export default function ProjectSettingsPanel({ projectId }: ProjectSettingsPanel
             }}
             placeholder={t('projectSettings.worktreeInitPlaceholder')}
             rows={3}
-            className="w-full px-2 py-1.5 bg-neutral-800 border border-neutral-700 rounded text-sm text-white
-                       placeholder:text-neutral-600 resize-none focus:outline-none focus:border-primary"
+            className="w-full px-2 py-1.5 bg-elevated border border-border-default rounded text-sm text-fg
+                       placeholder:text-fg-dimmer resize-none focus:outline-none focus:border-primary"
           />
-          <p className="text-xs text-neutral-600 mt-1">
-            <Trans i18nKey="projectSettings.worktreeInitDescription" components={{ code: <code className="text-neutral-500" /> }} />
+          <p className="text-xs text-fg-dimmer mt-1">
+            <Trans i18nKey="projectSettings.worktreeInitDescription" components={{ code: <code className="text-fg-dim" /> }} />
           </p>
         </div>
       </div>
 
       {/* Save Button */}
       {dirty && (
-        <div className="px-3 py-2 border-t border-neutral-800">
+        <div className="px-3 py-2 border-t border-border-subtle">
           <Button variant="primary" size="xs" fullWidth loading={saving} disabled={saving} onClick={handleSave}>
             {saving ? t('common.saving') : t('common.save')}
           </Button>

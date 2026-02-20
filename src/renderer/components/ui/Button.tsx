@@ -9,9 +9,9 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 const VARIANT_STYLES: Record<NonNullable<ButtonProps['variant']>, string> = {
   primary:
-    'bg-primary hover:bg-primary-hover disabled:bg-neutral-600 disabled:text-neutral-400 text-white font-medium',
-  secondary: 'bg-secondary hover:bg-secondary-hover text-white',
-  ghost: 'text-neutral-400 hover:text-white',
+    'bg-primary hover:bg-primary-hover disabled:bg-hover disabled:text-fg-muted text-fg font-medium',
+  secondary: 'bg-secondary hover:bg-secondary-hover text-fg',
+  ghost: 'text-fg-muted hover:text-fg',
   danger: 'bg-red-600 hover:bg-red-500 text-white font-medium',
 }
 

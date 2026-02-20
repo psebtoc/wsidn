@@ -15,8 +15,8 @@ export default function Radio({ checked, onChange, disabled = false, className =
                     checked
                       ? 'border-primary'
                       : disabled
-                        ? 'border-neutral-600'
-                        : 'border-neutral-500 hover:border-neutral-300'
+                        ? 'border-fg-dimmer'
+                        : 'border-fg-dim hover:border-fg-secondary'
                   } ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'} ${className}`}
     >
       {checked && <div className="w-2 h-2 rounded-full bg-primary" />}

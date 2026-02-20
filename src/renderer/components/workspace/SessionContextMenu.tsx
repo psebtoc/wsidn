@@ -116,15 +116,15 @@ export default function SessionContextMenu({
   const hasResumable = resumableSessions.length > 0
 
   const itemClass =
-    'w-full text-left px-3 py-1.5 text-xs text-neutral-200 hover:bg-neutral-700/60 transition-colors rounded-sm flex items-center justify-between'
+    'w-full text-left px-3 py-1.5 text-xs text-fg-secondary hover:bg-hover/60 transition-colors rounded-sm flex items-center justify-between'
   const disabledClass =
-    'w-full text-left px-3 py-1.5 text-xs text-neutral-500 cursor-default rounded-sm flex items-center justify-between'
+    'w-full text-left px-3 py-1.5 text-xs text-fg-dim cursor-default rounded-sm flex items-center justify-between'
 
   return createPortal(
     <>
       <div
         ref={menuRef}
-        className="fixed z-[9999] min-w-[220px] py-1 bg-neutral-800 border border-neutral-700 rounded-md shadow-xl shadow-black/50"
+        className="fixed z-[9999] min-w-[220px] py-1 bg-elevated border border-border-default rounded-md shadow-xl shadow-black/50"
         style={{
           top: pos.top,
           left: pos.left,
@@ -143,14 +143,14 @@ export default function SessionContextMenu({
         >
           claude --skip-permissions
         </button>
-        <div className="h-px bg-neutral-700 my-1 mx-2" />
+        <div className="h-px bg-border-default my-1 mx-2" />
         <button
           className={itemClass}
           onClick={() => { onSelectWorktree(); onClose() }}
         >
           {t('contextMenu.worktree')}
         </button>
-        <div className="h-px bg-neutral-700 my-1 mx-2" />
+        <div className="h-px bg-border-default my-1 mx-2" />
         <div
           onMouseEnter={handleResumeEnter}
           onMouseLeave={handleResumeLeave}
@@ -169,7 +169,7 @@ export default function SessionContextMenu({
               ref={submenuRef}
               onMouseEnter={handleSubmenuEnter}
               onMouseLeave={handleSubmenuLeave}
-              className="fixed z-[10000] min-w-[200px] max-w-[300px] max-h-[300px] overflow-y-auto py-1 bg-neutral-800 border border-neutral-700 rounded-md shadow-xl shadow-black/50"
+              className="fixed z-[10000] min-w-[200px] max-w-[300px] max-h-[300px] overflow-y-auto py-1 bg-elevated border border-border-default rounded-md shadow-xl shadow-black/50"
               style={{
                 top: (() => {
                   const el = menuRef.current?.querySelector('[data-resume-trigger]')
@@ -187,12 +187,12 @@ export default function SessionContextMenu({
               {resumableSessions.map((s) => (
                 <button
                   key={s.claudeSessionId}
-                  className="w-full text-left px-3 py-1.5 hover:bg-neutral-700/60 transition-colors rounded-sm"
+                  className="w-full text-left px-3 py-1.5 hover:bg-hover/60 transition-colors rounded-sm"
                   onClick={() => { onResume(s.claudeSessionId); onClose() }}
                 >
-                  <span className="block text-xs text-neutral-200 truncate">{s.name}</span>
+                  <span className="block text-xs text-fg-secondary truncate">{s.name}</span>
                   {s.claudeLastTitle && (
-                    <span className="block text-[10px] text-neutral-500 truncate mt-0.5">
+                    <span className="block text-[10px] text-fg-dim truncate mt-0.5">
                       {s.claudeLastTitle}
                     </span>
                   )}

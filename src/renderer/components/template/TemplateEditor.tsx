@@ -61,7 +61,7 @@ export default function TemplateEditor({ template, projectId, onSave, onCancel }
   return (
     <div className="p-4 space-y-3">
       <div>
-        <label className="block text-sm text-neutral-400 mb-1">{t('template.titleLabel')}</label>
+        <label className="block text-sm text-fg-muted mb-1">{t('template.titleLabel')}</label>
         <TextInput
           fullWidth
           autoFocus
@@ -72,7 +72,7 @@ export default function TemplateEditor({ template, projectId, onSave, onCancel }
       </div>
 
       <div>
-        <label className="block text-sm text-neutral-400 mb-1">{t('template.contentLabel')}</label>
+        <label className="block text-sm text-fg-muted mb-1">{t('template.contentLabel')}</label>
         <Textarea
           fullWidth
           value={content}
@@ -83,9 +83,9 @@ export default function TemplateEditor({ template, projectId, onSave, onCancel }
       </div>
 
       <div>
-        <label className="block text-sm text-neutral-400 mb-1">{t('template.scopeLabel')}</label>
+        <label className="block text-sm text-fg-muted mb-1">{t('template.scopeLabel')}</label>
         <div className="flex gap-4">
-          <label className={`flex items-center gap-1.5 text-sm ${isEditing ? 'text-neutral-500' : 'text-neutral-300 cursor-pointer'}`}>
+          <label className={`flex items-center gap-1.5 text-sm ${isEditing ? 'text-fg-dim' : 'text-fg-secondary cursor-pointer'}`}>
             <Radio
               checked={scope === 'global'}
               onChange={() => setScope('global')}
@@ -93,7 +93,7 @@ export default function TemplateEditor({ template, projectId, onSave, onCancel }
             />
             {t('template.global')}
           </label>
-          <label className={`flex items-center gap-1.5 text-sm ${isEditing ? 'text-neutral-500' : 'text-neutral-300 cursor-pointer'}`}>
+          <label className={`flex items-center gap-1.5 text-sm ${isEditing ? 'text-fg-dim' : 'text-fg-secondary cursor-pointer'}`}>
             <Radio
               checked={scope === 'project'}
               onChange={() => setScope('project')}

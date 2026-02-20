@@ -27,22 +27,22 @@ export default function QuickInsertBar({ projectId, onInsert }: QuickInsertBarPr
   if (templates.length === 0) return null
 
   return (
-    <div className="flex items-center gap-2 h-8 px-2 bg-neutral-800 border-b border-neutral-700/50 shrink-0">
+    <div className="flex items-center gap-2 h-8 px-2 bg-elevated border-b border-border-default/50 shrink-0">
       <input
         type="text"
         value={filter}
         onChange={(e) => setFilter(e.target.value)}
         placeholder={t('template.filterPlaceholder')}
-        className="w-24 px-2 py-0.5 bg-neutral-900 border border-neutral-700 rounded text-xs text-white
-                   placeholder:text-neutral-500 focus:outline-none focus:border-primary shrink-0"
+        className="w-24 px-2 py-0.5 bg-surface border border-border-default rounded text-xs text-fg
+                   placeholder:text-fg-dim focus:outline-none focus:border-primary shrink-0"
       />
       <div className="flex-1 flex gap-1.5 overflow-x-auto min-w-0">
         {filtered.map((t) => (
           <Tooltip key={t.id} content={t.content} side="bottom">
             <button
               onClick={() => onInsert(t.content)}
-              className="px-2.5 py-0.5 bg-neutral-700 hover:bg-neutral-600 rounded-full text-xs text-neutral-300
-                         hover:text-white transition-colors whitespace-nowrap shrink-0"
+              className="px-2.5 py-0.5 bg-hover hover:bg-fg-dimmer rounded-full text-xs text-fg-secondary
+                         hover:text-fg transition-colors whitespace-nowrap shrink-0"
             >
               {t.title}
             </button>

@@ -73,7 +73,7 @@ export default function Tooltip({ content, side = 'bottom', children }: TooltipP
       {visible &&
         createPortal(
           <div
-            className="fixed z-[9999] px-2 py-1 text-xs text-white bg-neutral-800 border border-neutral-700
+            className="fixed z-[9999] px-2 py-1 text-xs text-fg bg-elevated border border-border-default
                        rounded shadow-lg pointer-events-none whitespace-nowrap"
             style={{
               top: pos.top,

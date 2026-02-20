@@ -20,7 +20,7 @@ export default function ProjectList({ projects, onSelect }: ProjectListProps) {
 
   if (projects.length === 0) {
     return (
-      <div className="text-center py-12 text-neutral-500">
+      <div className="text-center py-12 text-fg-dim">
         <p className="text-sm">{t('startup.noProjects')}</p>
         <p className="text-sm mt-1">{t('startup.createToStart')}</p>
       </div>
@@ -34,20 +34,20 @@ export default function ProjectList({ projects, onSelect }: ProjectListProps) {
           <button
             onClick={() => onSelect(project.id)}
             className="w-full flex items-center justify-between px-3 py-3 rounded-md
-                       hover:bg-neutral-700/50 transition-colors group text-left"
+                       hover:bg-hover/50 transition-colors group text-left"
           >
             <div className="min-w-0 flex-1">
-              <div className="text-sm font-medium text-white truncate">
+              <div className="text-sm font-medium text-fg truncate">
                 {project.name}
               </div>
-              <div className="text-xs text-neutral-500 truncate mt-0.5">
+              <div className="text-xs text-fg-dim truncate mt-0.5">
                 {project.path}
               </div>
             </div>
             <Tooltip content={t('startup.deleteProject')} side="left">
               <button
                 onClick={(e) => handleDelete(e, project.id)}
-                className="ml-3 p-1 text-neutral-600 hover:text-red-400 opacity-0 group-hover:opacity-100
+                className="ml-3 p-1 text-fg-dimmer hover:text-red-400 opacity-0 group-hover:opacity-100
                            transition-all shrink-0"
               >
                 <Trash2 size={14} />

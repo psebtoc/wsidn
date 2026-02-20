@@ -47,8 +47,8 @@ export default function TodoCreateInput({ sessionId, parentId, onDone }: TodoCre
         onKeyDown={handleKeyDown}
         onBlur={onDone}
         placeholder={t('todo.newTodoPlaceholder')}
-        className="w-full bg-neutral-800 border border-neutral-600 rounded px-2 py-1 text-xs text-white
-                   placeholder-neutral-500 outline-none focus:border-primary transition-colors"
+        className="w-full bg-elevated border border-border-input rounded px-2 py-1 text-xs text-fg
+                   placeholder-fg-dim outline-none focus:border-primary transition-colors"
       />
     </div>
   )

@@ -17,7 +17,7 @@ const STATUS_CYCLE: TodoStatus[] = ['pending', 'in_progress', 'done']
 const PRIORITY_COLORS: Record<string, string> = {
   high: 'text-red-400',
   medium: 'text-yellow-400',
-  low: 'text-neutral-600',
+  low: 'text-fg-dimmer',
 }
 
 function todoStatusToCheckbox(status: TodoStatus): 'unchecked' | 'indeterminate' | 'checked' {
@@ -54,14 +54,14 @@ export default function TodoItem({ todo, depth }: TodoItemProps) {
   return (
     <div>
       <div
-        className="group flex items-center gap-1 py-0.5 pr-1 rounded hover:bg-neutral-800/50 transition-colors"
+        className="group flex items-center gap-1 py-0.5 pr-1 rounded hover:bg-elevated/50 transition-colors"
         style={{ paddingLeft: depth * 16 }}
       >
         {/* Expand/collapse */}
         <button
           onClick={() => hasChildren && toggleExpand(todo.id)}
-          className={`w-4 h-4 flex items-center justify-center text-neutral-500 ${
-            hasChildren ? 'hover:text-neutral-300 cursor-pointer' : 'cursor-default opacity-0'
+          className={`w-4 h-4 flex items-center justify-center text-fg-dim ${
+            hasChildren ? 'hover:text-fg-secondary cursor-pointer' : 'cursor-default opacity-0'
           }`}
         >
           {hasChildren && (
@@ -88,7 +88,7 @@ export default function TodoItem({ todo, depth }: TodoItemProps) {
         {/* Title */}
         <span
           className={`flex-1 text-xs truncate ${
-            isDone ? 'line-through text-neutral-500' : 'text-neutral-200'
+            isDone ? 'line-through text-fg-dim' : 'text-fg-secondary'
           }`}
         >
           {todo.title}
@@ -103,7 +103,7 @@ export default function TodoItem({ todo, depth }: TodoItemProps) {
               if (!isExpanded) toggleExpand(todo.id)
             }}
             className="opacity-0 group-hover:opacity-100 w-4 h-4 flex items-center justify-center
-                       text-neutral-500 hover:text-neutral-300 transition-opacity"
+                       text-fg-dim hover:text-fg-secondary transition-opacity"
           >
             <Plus size={10} />
           </button>
@@ -114,7 +114,7 @@ export default function TodoItem({ todo, depth }: TodoItemProps) {
           <button
             onClick={handleDelete}
             className="opacity-0 group-hover:opacity-100 w-4 h-4 flex items-center justify-center
-                       text-neutral-500 hover:text-red-400 transition-opacity"
+                       text-fg-dim hover:text-red-400 transition-opacity"
           >
             <X size={10} />
           </button>

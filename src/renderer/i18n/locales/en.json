@@ -29,6 +29,9 @@
   "projectCreate.failedSelectDir": "Failed to select directory",
 
   "settings.title": "Settings",
+  "settings.tabs.general": "General",
+  "settings.tabs.terminal": "Terminal",
+  "settings.tabs.appearance": "Appearance",
   "settings.terminal": "Terminal",
   "settings.fontSize": "Font Size",
   "settings.fontFamily": "Font Family",
@@ -45,6 +48,9 @@
   "settings.languageDescription": "Select the UI display language.",
   "settings.lang.ko": "한국어",
   "settings.lang.en": "English",
+  "settings.appearance.theme": "Theme",
+  "settings.appearance.themeDescription": "Choose a color theme for the entire app.",
+  "settings.terminal.resetToThemeDefault": "Reset to theme default",
 
   "projectSettings.title": "Project Settings",
   "projectSettings.name": "Name",

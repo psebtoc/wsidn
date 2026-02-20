@@ -38,7 +38,7 @@ export default function WorktreeBranchDialog({ onConfirm, onCancel }: WorktreeBr
 
   return (
     <Modal open={true} onClose={onCancel} portal width="w-[340px]" className="p-4">
-      <h3 className="text-sm font-medium text-neutral-200 mb-3">{t('worktreeDialog.title')}</h3>
+      <h3 className="text-sm font-medium text-fg-secondary mb-3">{t('worktreeDialog.title')}</h3>
       <TextInput
         ref={inputRef}
         fullWidth

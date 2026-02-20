@@ -29,6 +29,9 @@
   "projectCreate.failedSelectDir": "디렉토리 선택에 실패했습니다",
 
   "settings.title": "설정",
+  "settings.tabs.general": "일반",
+  "settings.tabs.terminal": "터미널",
+  "settings.tabs.appearance": "외관",
   "settings.terminal": "터미널",
   "settings.fontSize": "글꼴 크기",
   "settings.fontFamily": "글꼴",
@@ -45,6 +48,9 @@
   "settings.languageDescription": "UI 표시 언어를 선택합니다.",
   "settings.lang.ko": "한국어",
   "settings.lang.en": "English",
+  "settings.appearance.theme": "테마",
+  "settings.appearance.themeDescription": "앱 전체의 색상 테마를 선택합니다.",
+  "settings.terminal.resetToThemeDefault": "테마 기본값으로 초기화",
 
   "projectSettings.title": "프로젝트 설정",
   "projectSettings.name": "이름",

@@ -3,11 +3,130 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --color-primary: 37 99 235;
-    --color-primary-hover: 59 130 246;
-    --color-secondary: 64 64 64;
-    --color-secondary-hover: 82 82 82;
+  /* Default Dark */
+  [data-theme="default-dark"] {
+    --color-base: 10 10 10;
+    --color-surface: 23 23 23;
+    --color-elevated: 38 38 38;
+    --color-hover: 64 64 64;
+    --color-fg: 255 255 255;
+    --color-fg-secondary: 212 212 212;
+    --color-fg-muted: 163 163 163;
+    --color-fg-dim: 115 115 115;
+    --color-fg-dimmer: 82 82 82;
+    --color-border: 64 64 64;
+    --color-border-subtle: 38 38 38;
+    --color-border-input: 82 82 82;
+    --color-accent: 37 99 235;
+    --color-accent-hover: 59 130 246;
+  }
+
+  /* Dracula */
+  [data-theme="dracula"] {
+    --color-base: 25 26 33;
+    --color-surface: 33 34 44;
+    --color-elevated: 40 42 54;
+    --color-hover: 68 71 90;
+    --color-fg: 248 248 242;
+    --color-fg-secondary: 224 224 224;
+    --color-fg-muted: 176 176 176;
+    --color-fg-dim: 98 114 164;
+    --color-fg-dimmer: 77 90 128;
+    --color-border: 68 71 90;
+    --color-border-subtle: 44 45 58;
+    --color-border-input: 98 114 164;
+    --color-accent: 189 147 249;
+    --color-accent-hover: 202 165 255;
+  }
+
+  /* Nord */
+  [data-theme="nord"] {
+    --color-base: 36 41 51;
+    --color-surface: 46 52 64;
+    --color-elevated: 59 66 82;
+    --color-hover: 67 76 94;
+    --color-fg: 236 239 244;
+    --color-fg-secondary: 216 222 233;
+    --color-fg-muted: 165 177 194;
+    --color-fg-dim: 123 136 161;
+    --color-fg-dimmer: 97 110 136;
+    --color-border: 67 76 94;
+    --color-border-subtle: 59 66 82;
+    --color-border-input: 76 86 106;
+    --color-accent: 136 192 208;
+    --color-accent-hover: 143 188 187;
+  }
+
+  /* Solarized Dark */
+  [data-theme="solarized-dark"] {
+    --color-base: 0 30 38;
+    --color-surface: 0 43 54;
+    --color-elevated: 7 54 66;
+    --color-hover: 9 67 82;
+    --color-fg: 253 246 227;
+    --color-fg-secondary: 238 232 213;
+    --color-fg-muted: 147 161 161;
+    --color-fg-dim: 101 123 131;
+    --color-fg-dimmer: 88 110 117;
+    --color-border: 9 67 82;
+    --color-border-subtle: 7 54 66;
+    --color-border-input: 88 110 117;
+    --color-accent: 38 139 210;
+    --color-accent-hover: 46 158 230;
+  }
+
+  /* Solarized Light */
+  [data-theme="solarized-light"] {
+    --color-base: 253 246 227;
+    --color-surface: 238 232 213;
+    --color-elevated: 221 214 193;
+    --color-hover: 208 200 176;
+    --color-fg: 7 54 66;
+    --color-fg-secondary: 88 110 117;
+    --color-fg-muted: 101 123 131;
+    --color-fg-dim: 147 161 161;
+    --color-fg-dimmer: 176 191 191;
+    --color-border: 208 200 176;
+    --color-border-subtle: 221 214 193;
+    --color-border-input: 147 161 161;
+    --color-accent: 38 139 210;
+    --color-accent-hover: 46 158 230;
+  }
+
+  /* One Dark */
+  [data-theme="one-dark"] {
+    --color-base: 30 33 39;
+    --color-surface: 40 44 52;
+    --color-elevated: 44 49 58;
+    --color-hover: 62 68 82;
+    --color-fg: 230 230 230;
+    --color-fg-secondary: 171 178 191;
+    --color-fg-muted: 132 139 152;
+    --color-fg-dim: 99 109 131;
+    --color-fg-dimmer: 75 82 99;
+    --color-border: 62 68 82;
+    --color-border-subtle: 44 49 58;
+    --color-border-input: 92 99 112;
+    --color-accent: 97 175 239;
+    --color-accent-hover: 116 185 240;
+  }
+
+  /* Catppuccin Mocha */
+  [data-theme="catppuccin-mocha"] {
+    --color-base: 30 30 46;
+    --color-surface: 36 36 62;
+    --color-elevated: 49 50 68;
+    --color-hover: 69 71 90;
+    --color-fg: 205 214 244;
+    --color-fg-secondary: 186 194 222;
+    --color-fg-muted: 166 173 200;
+    --color-fg-dim: 127 132 156;
+    --color-fg-dimmer: 88 91 112;
+    --color-border: 69 71 90;
+    --color-border-subtle: 49 50 68;
+    --color-border-input: 88 91 112;
+    --color-accent: 137 180 250;
+    --color-accent-hover: 156 195 251;
   }
 }
 
@@ -28,12 +147,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgb(var(--color-fg) / 0.15);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgb(var(--color-fg) / 0.25);
 }
 
 /* Tab scroll — hidden scrollbar, wheel/trackpad scroll + auto-scroll active tab */

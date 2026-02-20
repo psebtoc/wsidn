@@ -192,7 +192,7 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
     <div className="flex h-full w-full">
       {/* Left sidebar group — spacer pushes ribbon + panels below tab bar level */}
       <div className="flex flex-col shrink-0">
-        <div className="h-[35px] bg-neutral-950 border-b border-b-neutral-700 shrink-0" />
+        <div className="h-[35px] bg-base border-b border-b-border-default shrink-0" />
         <div className="flex flex-1 min-h-0">
           <ActivityRibbon activePanel={activePanel} onTogglePanel={handleTogglePanel} />
 
@@ -241,11 +241,11 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
           </div>
         )}
 
-        <div ref={containerRef} className="flex-1 relative bg-neutral-950">
+        <div ref={containerRef} className="flex-1 relative bg-base">
           {visiblePanes.length === 0 && panes.length === 0 ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
-                <p className="text-neutral-500 text-sm mb-3">{t('workspace.noActiveSessions')}</p>
+                <p className="text-fg-dim text-sm mb-3">{t('workspace.noActiveSessions')}</p>
                 <Button
                   variant="primary"
                   size="md"
@@ -258,8 +258,8 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
           ) : visiblePanes.length === 0 ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
-                <p className="text-neutral-500 text-sm mb-3">{t('workspace.allPanesMinimized')}</p>
-                <p className="text-neutral-600 text-xs">{t('workspace.restorePane')}</p>
+                <p className="text-fg-dim text-sm mb-3">{t('workspace.allPanesMinimized')}</p>
+                <p className="text-fg-dimmer text-xs">{t('workspace.restorePane')}</p>
               </div>
             </div>
           ) : (
@@ -344,7 +344,7 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
                   >
                     {/* Visible 1px line */}
                     <div
-                      className={`absolute bg-neutral-700 transition-colors duration-150 delay-300 group-hover:bg-primary ${
+                      className={`absolute bg-border-default transition-colors duration-150 delay-300 group-hover:bg-primary ${
                         isHorizontal
                           ? 'left-[2px] top-0 bottom-0 w-px'
                           : 'top-[3px] left-0 right-0 h-px'
