@@ -63,10 +63,10 @@ export interface WsidnAPI {
     onExit: (callback: (sessionId: string, exitCode: number) => void) => () => void
   }
   todo: {
-    list: (sessionId: string) => Promise<IpcResult<Todo[]>>
+    list: (projectId: string, sessionId: string) => Promise<IpcResult<Todo[]>>
     create: (input: CreateTodoInput) => Promise<IpcResult<Todo>>
     update: (input: UpdateTodoInput) => Promise<IpcResult<Todo>>
-    delete: (id: string) => Promise<IpcResult<boolean>>
+    delete: (projectId: string, sessionId: string, id: string) => Promise<IpcResult<boolean>>
   }
   template: {
     list: (projectId: string | null) => Promise<IpcResult<PromptTemplate[]>>

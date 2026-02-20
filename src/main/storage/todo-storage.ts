@@ -1,11 +1,13 @@
-import { existsSync, readdirSync } from 'fs'
 import { join } from 'path'
 import { v4 as uuid } from 'uuid'
 import { getAppDataPath, readJson, writeJson, ensureDir } from './storage-manager'
 
+type MindTreeCategory = 'task' | 'decision' | 'note'
+
 interface Todo {
   id: string
   sessionId: string
+  category: MindTreeCategory
   title: string
   description: string
   status: 'pending' | 'in_progress' | 'done'
@@ -16,29 +18,34 @@ interface Todo {
   updatedAt: string
 }
 
-function todosPath(sessionId: string): string {
-  return getAppDataPath('sessions', sessionId, 'todos.json')
+function mindtreePath(projectId: string, sessionId: string): string {
+  return getAppDataPath('projects', projectId, 'mindtree', `${sessionId}.json`)
 }
 
-export function listTodos(sessionId: string): Todo[] {
-  return readJson<Todo[]>(todosPath(sessionId), [])
+export function listTodos(projectId: string, sessionId: string): Todo[] {
+  const todos = readJson<Todo[]>(mindtreePath(projectId, sessionId), [])
+  // Migration fallback: existing items without category default to 'task'
+  return todos.map((t) => ({ ...t, category: t.category ?? 'task' }))
 }
 
 export function createTodo(input: {
+  projectId: string
   sessionId: string
   title: string
+  category?: MindTreeCategory
   description?: string
   priority?: 'low' | 'medium' | 'high'
   parentId?: string | null
 }): Todo {
-  const filePath = todosPath(input.sessionId)
+  const filePath = mindtreePath(input.projectId, input.sessionId)
   ensureDir(join(filePath, '..'))
-  const todos = listTodos(input.sessionId)
+  const todos = listTodos(input.projectId, input.sessionId)
   const now = new Date().toISOString()
 
   const todo: Todo = {
     id: uuid(),
     sessionId: input.sessionId,
+    category: input.category ?? 'task',
     title: input.title,
     description: input.description ?? '',
     status: 'pending',
@@ -56,6 +63,7 @@ export function createTodo(input: {
 
 export function updateTodo(input: {
   id: string
+  projectId: string
   sessionId: string
   title?: string
   description?: string
@@ -64,7 +72,7 @@ export function updateTodo(input: {
   parentId?: string | null
   order?: number
 }): Todo {
-  const todos = listTodos(input.sessionId)
+  const todos = listTodos(input.projectId, input.sessionId)
   const idx = todos.findIndex((t) => t.id === input.id)
   if (idx === -1) throw new Error(`Todo not found: ${input.id}`)
 
@@ -81,30 +89,12 @@ export function updateTodo(input: {
   }
 
   todos[idx] = updated
-  writeJson(todosPath(input.sessionId), todos)
+  writeJson(mindtreePath(input.projectId, input.sessionId), todos)
   return updated
 }
 
-export function deleteTodoById(id: string): void {
-  const sessionsDir = getAppDataPath('sessions')
-  if (!existsSync(sessionsDir)) throw new Error(`Todo not found: ${id}`)
-
-  const entries = readdirSync(sessionsDir, { withFileTypes: true })
-  for (const entry of entries) {
-    if (!entry.isDirectory()) continue
-    const filePath = join(sessionsDir, entry.name, 'todos.json')
-    if (!existsSync(filePath)) continue
-    const todos = readJson<Todo[]>(filePath, [])
-    if (todos.some((t) => t.id === id)) {
-      deleteTodo(entry.name, id)
-      return
-    }
-  }
-  throw new Error(`Todo not found: ${id}`)
-}
-
-export function deleteTodo(sessionId: string, id: string): void {
-  const todos = listTodos(sessionId)
+export function deleteTodo(projectId: string, sessionId: string, id: string): void {
+  const todos = listTodos(projectId, sessionId)
 
   // Collect IDs to delete (target + all descendants)
   const toDelete = new Set<string>()
@@ -119,5 +109,5 @@ export function deleteTodo(sessionId: string, id: string): void {
   collectChildren(id)
 
   const remaining = todos.filter((t) => !toDelete.has(t.id))
-  writeJson(todosPath(sessionId), remaining)
+  writeJson(mindtreePath(projectId, sessionId), remaining)
 }

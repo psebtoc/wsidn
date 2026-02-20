@@ -266,6 +266,7 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
                     <PaneView
                       pane={pane}
                       sessions={sessions}
+                      projectId={projectId}
                       isFocused={pane.id === focusedPaneId}
                       isSplit={isSplit}
                       onFocus={() => focusPaneFn(pane.id)}

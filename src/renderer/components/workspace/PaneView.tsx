@@ -7,7 +7,7 @@ import { useSessionStore } from '@renderer/stores/session-store'
 import { useConfigStore } from '@renderer/stores/config-store'
 import { getThemePreset } from '@renderer/themes/theme-presets'
 import Tooltip from '@renderer/components/ui/Tooltip'
-import TodoPanel from '@renderer/components/todo/TodoPanel'
+import MindTreePanel from '@renderer/components/mindtree/MindTreePanel'
 import TerminalPane from './TerminalPane'
 import SessionContextMenu from './SessionContextMenu'
 import WorktreeBranchDialog from './WorktreeBranchDialog'
@@ -17,6 +17,7 @@ type DropEdge = 'top' | 'bottom' | 'left' | 'right' | null
 interface PaneViewProps {
   pane: Pane
   sessions: Session[]
+  projectId: string
   isFocused: boolean
   isSplit: boolean
   onFocus: () => void
@@ -34,6 +35,7 @@ interface PaneViewProps {
 export default function PaneView({
   pane,
   sessions,
+  projectId,
   isFocused,
   isSplit,
   onFocus,
@@ -48,7 +50,7 @@ export default function PaneView({
   resumeHistory = []
 }: PaneViewProps) {
   const { t } = useTranslation()
-  const [showTodo, setShowTodo] = useState(false)
+  const [showMindTree, setShowMindTree] = useState(false)
   const [tabDropIndex, setTabDropIndex] = useState<number | null>(null)
   const [tabDropSide, setTabDropSide] = useState<'left' | 'right'>('left')
   const [dropEdge, setDropEdge] = useState<DropEdge>(null)
@@ -156,6 +158,13 @@ export default function PaneView({
     .filter(Boolean) as Session[]
 
   const activeSessionId = pane.activeSessionId
+  const activeSession = paneSessions.find((s) => s.id === activeSessionId)
+  const hasClaude = !!activeSession?.claudeSessionId
+
+  // Auto-toggle Mind Tree: on when Claude connects, off when disconnects
+  useEffect(() => {
+    setShowMindTree(hasClaude)
+  }, [hasClaude])
 
   // --- Tab drag handlers ---
 
@@ -517,17 +526,20 @@ export default function PaneView({
             </button>
           </Tooltip>
           <div className="w-px h-3 bg-border-default/50" />
-          {/* TODO toggle */}
-          <Tooltip content={t('pane.toggleTodo')} side="bottom">
+          {/* Mind Tree toggle */}
+          <Tooltip content={t('pane.toggleMindTree')} side="bottom">
             <button
+              disabled={!hasClaude}
               onClick={(e) => {
                 e.stopPropagation()
-                setShowTodo((v) => !v)
+                setShowMindTree((v) => !v)
               }}
               className={`flex items-center justify-center w-5 h-5 rounded transition-colors ${
-                showTodo
-                  ? 'text-primary bg-hover/50'
-                  : 'text-fg-dim hover:text-fg-secondary hover:bg-hover/50'
+                !hasClaude
+                  ? 'opacity-30 cursor-not-allowed text-fg-dim'
+                  : showMindTree
+                    ? 'text-primary bg-hover/50'
+                    : 'text-fg-dim hover:text-fg-secondary hover:bg-hover/50'
               }`}
             >
               <SquareCheckBig size={12} />
@@ -610,10 +622,10 @@ export default function PaneView({
           {renderDropOverlay()}
         </div>
 
-        {/* Per-pane TODO panel */}
-        {showTodo && (
-          activeSessionId ? (
-            <TodoPanel sessionId={activeSessionId} />
+        {/* Per-pane Mind Tree panel — keyed by claudeSessionId so data survives resume */}
+        {showMindTree && (
+          activeSession?.claudeSessionId ? (
+            <MindTreePanel projectId={projectId} sessionId={activeSession.claudeSessionId} />
           ) : (
             <div className="w-64 h-full bg-surface border-l border-border-default/50 flex items-center justify-center">
               <p className="text-xs text-fg-dim">{t('pane.noActiveSession')}</p>

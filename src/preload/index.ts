@@ -63,10 +63,12 @@ contextBridge.exposeInMainWorld('wsidn', {
   },
 
   todo: {
-    list: (sessionId: string) => ipcRenderer.invoke('todo:list', { sessionId }),
+    list: (projectId: string, sessionId: string) =>
+      ipcRenderer.invoke('todo:list', { projectId, sessionId }),
     create: (input: Record<string, unknown>) => ipcRenderer.invoke('todo:create', input),
     update: (input: Record<string, unknown>) => ipcRenderer.invoke('todo:update', input),
-    delete: (id: string) => ipcRenderer.invoke('todo:delete', { id })
+    delete: (projectId: string, sessionId: string, id: string) =>
+      ipcRenderer.invoke('todo:delete', { projectId, sessionId, id })
   },
 
   template: {

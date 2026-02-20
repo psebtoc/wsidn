@@ -61,14 +61,16 @@ export interface AppConfig {
   language: 'ko' | 'en'
 }
 
-// --- Phase 2: TODO ---
+// --- Mind Tree ---
 
+export type MindTreeCategory = 'task' | 'decision' | 'note'
 export type TodoStatus = 'pending' | 'in_progress' | 'done'
 export type TodoPriority = 'low' | 'medium' | 'high'
 
 export interface Todo {
   id: string
   sessionId: string
+  category: MindTreeCategory
   title: string
   description: string
   status: TodoStatus
@@ -80,8 +82,10 @@ export interface Todo {
 }
 
 export interface CreateTodoInput {
+  projectId: string
   sessionId: string
   title: string
+  category?: MindTreeCategory
   description?: string
   priority?: TodoPriority
   parentId?: string | null
@@ -89,6 +93,7 @@ export interface CreateTodoInput {
 
 export interface UpdateTodoInput {
   id: string
+  projectId?: string
   sessionId?: string
   title?: string
   description?: string

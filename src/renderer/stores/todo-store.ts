@@ -6,11 +6,12 @@ interface TodoState {
   todos: Todo[]
   expandedIds: Set<string>
   loading: boolean
+  currentProjectId: string | null
   // actions
-  loadTodos: (sessionId: string) => Promise<void>
+  loadTodos: (projectId: string, sessionId: string) => Promise<void>
   addTodo: (input: CreateTodoInput) => Promise<Todo>
   updateTodo: (input: UpdateTodoInput) => Promise<void>
-  removeTodo: (id: string) => Promise<void>
+  removeTodo: (projectId: string, sessionId: string, id: string) => Promise<void>
   toggleExpand: (id: string) => void
 }
 
@@ -29,10 +30,11 @@ export const useTodoStore = create<TodoState>((set, get) => ({
   todos: [],
   expandedIds: new Set<string>(),
   loading: false,
+  currentProjectId: null,
 
-  loadTodos: async (sessionId) => {
-    set({ loading: true })
-    const todos = await todoService.list(sessionId)
+  loadTodos: async (projectId, sessionId) => {
+    set({ loading: true, currentProjectId: projectId })
+    const todos = await todoService.list(projectId, sessionId)
     set({ todos, loading: false })
   },
 
@@ -44,15 +46,18 @@ export const useTodoStore = create<TodoState>((set, get) => ({
 
   updateTodo: async (input) => {
     const existing = get().todos.find((t) => t.id === input.id)
-    const enriched = existing ? { ...input, sessionId: existing.sessionId } : input
+    const projectId = input.projectId ?? get().currentProjectId ?? undefined
+    const enriched = existing
+      ? { ...input, sessionId: existing.sessionId, projectId }
+      : input
     const todo = await todoService.update(enriched)
     set((s) => ({
       todos: s.todos.map((t) => (t.id === todo.id ? todo : t)),
     }))
   },
 
-  removeTodo: async (id) => {
-    await todoService.delete(id)
+  removeTodo: async (projectId, sessionId, id) => {
+    await todoService.delete(projectId, sessionId, id)
     const childIds = collectChildIds(get().todos, id)
     const removeSet = new Set([id, ...childIds])
     set((s) => ({

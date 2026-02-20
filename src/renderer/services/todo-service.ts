@@ -2,8 +2,8 @@ import { unwrapIpc } from '@renderer/types/ipc'
 import type { CreateTodoInput, UpdateTodoInput } from '@renderer/types/project'
 
 export const todoService = {
-  async list(sessionId: string) {
-    return unwrapIpc(await window.wsidn.todo.list(sessionId))
+  async list(projectId: string, sessionId: string) {
+    return unwrapIpc(await window.wsidn.todo.list(projectId, sessionId))
   },
   async create(input: CreateTodoInput) {
     return unwrapIpc(await window.wsidn.todo.create(input))
@@ -11,7 +11,7 @@ export const todoService = {
   async update(input: UpdateTodoInput) {
     return unwrapIpc(await window.wsidn.todo.update(input))
   },
-  async delete(id: string) {
-    return unwrapIpc(await window.wsidn.todo.delete(id))
+  async delete(projectId: string, sessionId: string, id: string) {
+    return unwrapIpc(await window.wsidn.todo.delete(projectId, sessionId, id))
   },
 }
