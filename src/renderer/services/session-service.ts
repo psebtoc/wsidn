@@ -1,21 +1,9 @@
 import { unwrapIpc } from '@renderer/types/ipc'
-import type { WorkspaceState } from '@renderer/types/project'
+import type { ResumeHistoryEntry, WorkspaceState } from '@renderer/types/project'
 
 export const sessionService = {
-  async create(projectId: string, cwd: string) {
-    return unwrapIpc(await window.wsidn.session.create(projectId, cwd))
-  },
   async close(sessionId: string) {
     return unwrapIpc(await window.wsidn.session.close(sessionId))
-  },
-  async list(projectId: string) {
-    return unwrapIpc(await window.wsidn.session.list(projectId))
-  },
-  async listAll() {
-    return unwrapIpc(await window.wsidn.session.listAll())
-  },
-  async updateTitle(sessionId: string, title: string) {
-    return unwrapIpc(await window.wsidn.session.updateTitle(sessionId, title))
   },
   async createWorktree(projectId: string, cwd: string, branchName: string) {
     return unwrapIpc(await window.wsidn.session.createWorktree(projectId, cwd, branchName))
@@ -23,11 +11,19 @@ export const sessionService = {
   async spawn(sessionId: string, cwd: string) {
     return unwrapIpc(await window.wsidn.session.spawn(sessionId, cwd))
   },
-  async clearStale(projectId: string) {
-    return unwrapIpc(await window.wsidn.session.clearStale(projectId))
+  async listResumeHistory(projectId: string): Promise<ResumeHistoryEntry[]> {
+    return unwrapIpc(await window.wsidn.resumeHistory.list(projectId))
   },
-  async rename(sessionId: string, name: string) {
-    return unwrapIpc(await window.wsidn.session.rename(sessionId, name))
+  async appendResumeHistory(
+    projectId: string,
+    entry: {
+      claudeSessionId: string
+      sessionName: string
+      claudeLastTitle: string | null
+      closedAt: string
+    }
+  ) {
+    return unwrapIpc(await window.wsidn.resumeHistory.append(projectId, entry))
   },
   async loadWorkspace(projectId: string): Promise<WorkspaceState | null> {
     return unwrapIpc(await window.wsidn.workspace.load(projectId))

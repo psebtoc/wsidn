@@ -11,12 +11,18 @@ export interface Session {
   projectId: string
   name: string
   cwd: string
-  status: 'active' | 'closed'
   createdAt: string
   claudeSessionId: string | null
   claudeModel: string | null
   claudeLastTitle: string | null
   lastClaudeSessionId: string | null
+}
+
+export interface ResumeHistoryEntry {
+  claudeSessionId: string
+  sessionName: string
+  claudeLastTitle: string | null
+  closedAt: string
 }
 
 export interface ClaudeActivity {
@@ -31,11 +37,6 @@ export interface ClaudeSessionEvent {
   claudeSessionId: string | null
   source: ClaudeHookSource
   model: string
-}
-
-export interface ProjectSessions {
-  project: { id: string; name: string }
-  sessions: Session[]
 }
 
 export interface TerminalConfig {

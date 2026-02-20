@@ -10,7 +10,7 @@ import type {
   CreateTemplateInput,
   UpdateTemplateInput,
   ClaudeSessionEvent,
-  ProjectSessions,
+  ResumeHistoryEntry,
   WorkspaceState
 } from './project'
 
@@ -23,19 +23,34 @@ export interface WsidnAPI {
     selectDir: () => Promise<IpcResult<string | null>>
   }
   session: {
-    create: (projectId: string, cwd: string) => Promise<IpcResult<Session>>
     close: (sessionId: string) => Promise<IpcResult<boolean>>
-    list: (projectId: string) => Promise<IpcResult<Session[]>>
-    listAll: () => Promise<IpcResult<ProjectSessions[]>>
-    updateTitle: (sessionId: string, title: string) => Promise<IpcResult<boolean>>
     createWorktree: (
       projectId: string,
       cwd: string,
       branchName: string
-    ) => Promise<IpcResult<{ session: Session; worktreePath: string; initScript: string | null }>>
+    ) => Promise<IpcResult<{ worktreePath: string; initScript: string | null }>>
     spawn: (sessionId: string, cwd: string) => Promise<IpcResult<boolean>>
-    clearStale: (projectId: string) => Promise<IpcResult<boolean>>
-    rename: (sessionId: string, name: string) => Promise<IpcResult<boolean>>
+  }
+  resumeHistory: {
+    list: (projectId: string) => Promise<IpcResult<ResumeHistoryEntry[]>>
+    append: (
+      projectId: string,
+      entry: {
+        claudeSessionId: string
+        sessionName: string
+        claudeLastTitle: string | null
+        closedAt: string
+      }
+    ) => Promise<IpcResult<boolean>>
+    appendSync: (
+      projectId: string,
+      entry: {
+        claudeSessionId: string
+        sessionName: string
+        claudeLastTitle: string | null
+        closedAt: string
+      }
+    ) => boolean
   }
   config: {
     get: () => Promise<IpcResult<AppConfig>>

@@ -7,7 +7,7 @@ import type {
   SplitDirection,
   ClaudeSessionEvent,
   ClaudeActivity,
-  ProjectSessions,
+  ResumeHistoryEntry,
   MinimizedPane,
   WorkspaceState
 } from '@renderer/types/project'
@@ -20,6 +20,10 @@ import {
   findPanePosition
 } from '@renderer/utils/split-utils'
 
+// --- Runtime session counter (resets on app restart) ---
+
+let _nextSessionNumber = 1
+
 // --- Pane name helper ---
 
 function nextPaneName(existingPanes: Pane[]): string {
@@ -31,6 +35,22 @@ function nextPaneName(existingPanes: Pane[]): string {
   let n = 1
   while (usedNumbers.has(n)) n++
   return `Pane ${n}`
+}
+
+// --- Internal session factory (renderer-only, no IPC) ---
+
+function _createSessionObject(projectId: string, cwd: string, nameOverride?: string): Session {
+  return {
+    id: crypto.randomUUID(),
+    projectId,
+    name: nameOverride ?? `Session ${_nextSessionNumber++}`,
+    cwd,
+    createdAt: new Date().toISOString(),
+    claudeSessionId: null,
+    claudeModel: null,
+    claudeLastTitle: null,
+    lastClaudeSessionId: null,
+  }
 }
 
 // --- Debounced workspace save ---
@@ -64,10 +84,30 @@ function _flushSave() {
   sessionService.saveWorkspace(projectId, workspace).catch(() => {})
 }
 
+function _flushResumeHistory() {
+  const projectId = _currentProjectId
+  if (!projectId) return
+
+  const state = useSessionStore.getState()
+  for (const session of state.sessions) {
+    const claudeId = session.lastClaudeSessionId ?? session.claudeSessionId
+    if (claudeId) {
+      // Use synchronous IPC to ensure write completes before app exit
+      window.wsidn.resumeHistory.appendSync(projectId, {
+        claudeSessionId: claudeId,
+        sessionName: session.name,
+        claudeLastTitle: session.claudeLastTitle ?? null,
+        closedAt: new Date().toISOString(),
+      })
+    }
+  }
+}
+
 // beforeunload flush
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', () => {
     _flushSave()
+    _flushResumeHistory()
   })
 }
 
@@ -77,11 +117,10 @@ interface SessionState {
   splitLayout: SplitNode | null
   focusedPaneId: string | null
   claudeActivities: Record<string, ClaudeActivity>
-  otherProjectSessions: ProjectSessions[]
   minimizedPanes: MinimizedPane[]
+  resumeHistory: ResumeHistoryEntry[]
 
-  loadSessions: (projectId: string) => Promise<void>
-  loadOtherProjectSessions: (currentProjectId: string) => Promise<void>
+  loadSessions: (projectId: string, cwd: string) => Promise<void>
 
   // Session management within panes
   createSessionInPane: (paneId: string, projectId: string, cwd: string) => Promise<void>
@@ -113,7 +152,7 @@ interface SessionState {
   updateClaudeLastTitle: (sessionId: string, title: string) => void
 
   // Session rename
-  renameSession: (sessionId: string, name: string) => Promise<void>
+  renameSession: (sessionId: string, name: string) => void
 
   // Session creation with command
   createSessionInPaneWithCommand: (paneId: string, projectId: string, cwd: string, command: string) => Promise<void>
@@ -126,46 +165,13 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   splitLayout: null,
   focusedPaneId: null,
   claudeActivities: {},
-  otherProjectSessions: [],
   minimizedPanes: [],
+  resumeHistory: [],
 
-  loadOtherProjectSessions: async (currentProjectId: string) => {
-    try {
-      const all = await sessionService.listAll()
-      const others = all.filter((ps) => ps.project.id !== currentProjectId)
-      set({ otherProjectSessions: others })
-    } catch {
-      set({ otherProjectSessions: [] })
-    }
-  },
-
-  loadSessions: async (projectId: string) => {
+  loadSessions: async (projectId: string, cwd: string) => {
     _currentProjectId = projectId
+    _nextSessionNumber = 1
 
-    // Clear stale Claude bindings from disk (no Claude process survives restart)
-    await sessionService.clearStale(projectId).catch(() => {})
-
-    const diskSessions = await sessionService.list(projectId)
-    const currentSessions = get().sessions
-
-    // Preserve in-memory claude bindings that may not yet be on disk
-    const sessions = diskSessions.map((ds) => {
-      const current = currentSessions.find((cs) => cs.id === ds.id)
-      if (current?.claudeSessionId && !ds.claudeSessionId) {
-        return { ...ds, claudeSessionId: current.claudeSessionId, claudeModel: current.claudeModel }
-      }
-      return ds
-    })
-
-    const activeSessions = sessions.filter((s) => s.status === 'active')
-    const activeIds = new Set(activeSessions.map((s) => s.id))
-
-    if (activeSessions.length === 0) {
-      set({ sessions, panes: [], splitLayout: null, focusedPaneId: null, minimizedPanes: [] })
-      return
-    }
-
-    // Try to load saved workspace
     let workspace: WorkspaceState | null = null
     try {
       workspace = await sessionService.loadWorkspace(projectId)
@@ -174,106 +180,81 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     }
 
     if (workspace && workspace.version === 1 && workspace.panes.length > 0) {
-      // Restore from workspace: remove closed sessions, clean up empty panes
-      let panes = workspace.panes.map((p) => ({
-        ...p,
-        sessionIds: p.sessionIds.filter((id) => activeIds.has(id)),
-        activeSessionId: p.activeSessionId && activeIds.has(p.activeSessionId) ? p.activeSessionId : null,
-      }))
-
-      // Fix null activeSessionId
-      panes = panes.map((p) =>
-        p.activeSessionId ? p : { ...p, activeSessionId: p.sessionIds[0] ?? null }
-      )
-
-      // Find sessions not in any pane and add them to first pane
-      const assignedIds = new Set(panes.flatMap((p) => p.sessionIds))
-      const orphanIds = activeSessions.filter((s) => !assignedIds.has(s.id)).map((s) => s.id)
-
-      // Remove empty non-minimized panes from layout
+      // Restore pane layout — create a fresh session for every pane (visible + minimized)
+      const sessions: Session[] = []
       const minimizedPaneIds = new Set((workspace.minimizedPanes ?? []).map((m) => m.paneId))
-      const emptyNonMinimized = panes.filter(
-        (p) => p.sessionIds.length === 0 && !minimizedPaneIds.has(p.id)
-      )
 
+      const panes: Pane[] = []
+      for (const p of workspace.panes) {
+        const session = _createSessionObject(projectId, cwd)
+        sessions.push(session)
+        panes.push({
+          ...p,
+          sessionIds: [session.id],
+          activeSessionId: session.id,
+        })
+      }
+
+      // Layout: minimized panes are already not in the split tree, keep as-is
       let layout = workspace.splitLayout
-      for (const ep of emptyNonMinimized) {
-        layout = layout ? removePane(layout, ep.id) : null
-      }
-      panes = panes.filter((p) => p.sessionIds.length > 0 || minimizedPaneIds.has(p.id))
 
-      // Also remove minimized panes that are empty
-      let minimizedPanes = (workspace.minimizedPanes ?? []).filter((m) => {
-        const pane = panes.find((p) => p.id === m.paneId)
-        return pane && pane.sessionIds.length > 0
-      })
-      panes = panes.filter((p) => p.sessionIds.length > 0)
-
-      // Add orphan sessions to the first visible pane
-      if (orphanIds.length > 0 && panes.length > 0) {
-        const firstPane = panes[0]
-        panes = panes.map((p) =>
-          p.id === firstPane.id
-            ? {
-                ...p,
-                sessionIds: [...p.sessionIds, ...orphanIds],
-                activeSessionId: p.activeSessionId ?? orphanIds[0],
-              }
-            : p
-        )
+      // Validate layout contains only existing visible pane ids
+      if (layout) {
+        const layoutPaneIds = new Set(getPaneIds(layout))
+        const visiblePanes = panes.filter((p) => !minimizedPaneIds.has(p.id))
+        const validPanes = visiblePanes.filter((p) => layoutPaneIds.has(p.id))
+        if (validPanes.length === 0 && visiblePanes.length > 0) {
+          layout = { type: 'leaf', paneId: visiblePanes[0].id }
+        }
+      } else {
+        const visiblePanes = panes.filter((p) => !minimizedPaneIds.has(p.id))
+        if (visiblePanes.length > 0) {
+          layout = { type: 'leaf', paneId: visiblePanes[0].id }
+        }
       }
 
-      // Validate focusedPaneId
-      const visiblePaneIds = new Set(
-        panes.filter((p) => !minimizedPanes.some((m) => m.paneId === p.id)).map((p) => p.id)
-      )
+      const minimizedPanes = workspace.minimizedPanes ?? []
+
       let focusedPaneId = workspace.focusedPaneId
+      const visiblePaneIds = new Set(
+        panes.filter((p) => !minimizedPaneIds.has(p.id)).map((p) => p.id)
+      )
       if (!focusedPaneId || !visiblePaneIds.has(focusedPaneId)) {
         focusedPaneId = [...visiblePaneIds][0] ?? null
       }
 
-      // Validate layout contains only existing pane ids
-      if (layout) {
-        const layoutPaneIds = new Set(getPaneIds(layout))
-        const existingVisible = panes.filter((p) => !minimizedPanes.some((m) => m.paneId === p.id))
-        const validLayoutPanes = existingVisible.filter((p) => layoutPaneIds.has(p.id))
-
-        if (validLayoutPanes.length === 0 && existingVisible.length > 0) {
-          // Layout doesn't match — rebuild as single leaf
-          layout = { type: 'leaf', paneId: existingVisible[0].id }
-        }
-      } else if (panes.length > 0) {
-        const firstVisible = panes.find((p) => !minimizedPanes.some((m) => m.paneId === p.id))
-        if (firstVisible) {
-          layout = { type: 'leaf', paneId: firstVisible.id }
-        }
-      }
-
-      set({ sessions, panes, splitLayout: layout, focusedPaneId, minimizedPanes })
-    } else {
-      // Default: create one pane with all active sessions as tabs
-      const paneId = crypto.randomUUID()
-      const pane: Pane = {
-        id: paneId,
-        name: 'Pane 1',
-        sessionIds: activeSessions.map((s) => s.id),
-        activeSessionId: activeSessions[0]?.id ?? null,
-      }
       set({
         sessions,
-        panes: [pane],
-        splitLayout: { type: 'leaf', paneId },
-        focusedPaneId: paneId,
+        panes,
+        splitLayout: layout,
+        focusedPaneId,
+        minimizedPanes,
+      })
+
+      // Spawn PTY for each session
+      for (const session of sessions) {
+        sessionService.spawn(session.id, cwd).catch(() => {})
+      }
+    } else {
+      // No workspace — start with empty state
+      set({
+        sessions: [],
+        panes: [],
+        splitLayout: null,
+        focusedPaneId: null,
         minimizedPanes: [],
       })
     }
 
-    // Spawn PTY processes for active sessions restored from disk
-    for (const session of activeSessions) {
-      sessionService.spawn(session.id, session.cwd).catch(() => {})
-    }
-
     _scheduleSave()
+
+    // Load resume history from disk (also triggers legacy migration)
+    try {
+      const history = await sessionService.listResumeHistory(projectId)
+      set({ resumeHistory: history })
+    } catch {
+      set({ resumeHistory: [] })
+    }
   },
 
   reorderSession: (paneId, sessionId, toIndex) => {
@@ -363,7 +344,9 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   },
 
   createFirstSession: async (projectId, cwd) => {
-    const session = await sessionService.create(projectId, cwd)
+    const session = _createSessionObject(projectId, cwd)
+    await sessionService.spawn(session.id, cwd)
+
     const paneId = crypto.randomUUID()
     const pane: Pane = {
       id: paneId,
@@ -381,7 +364,9 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   },
 
   createSessionInPane: async (paneId, projectId, cwd) => {
-    const session = await sessionService.create(projectId, cwd)
+    const session = _createSessionObject(projectId, cwd)
+    await sessionService.spawn(session.id, cwd)
+
     const newPanes = get().panes.map((p) => {
       if (p.id !== paneId) return p
       return {
@@ -399,10 +384,26 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   },
 
   closeSessionInPane: async (paneId, sessionId) => {
+    const session = get().sessions.find((s) => s.id === sessionId)
+    const claudeId = session?.lastClaudeSessionId ?? session?.claudeSessionId
+
+    // Update in-memory resume history immediately + persist to disk in background
+    if (session && claudeId && _currentProjectId) {
+      const entry: ResumeHistoryEntry = {
+        claudeSessionId: claudeId,
+        sessionName: session.name,
+        claudeLastTitle: session.claudeLastTitle ?? null,
+        closedAt: new Date().toISOString(),
+      }
+      const prev = get().resumeHistory.filter((e) => e.claudeSessionId !== claudeId)
+      set({ resumeHistory: [...prev, entry] })
+      sessionService.appendResumeHistory(_currentProjectId, entry).catch(() => {})
+    }
+
     await sessionService.close(sessionId)
-    const sessions = get().sessions.map((s) =>
-      s.id === sessionId ? { ...s, status: 'closed' as const } : s
-    )
+
+    // Remove session from memory
+    const sessions = get().sessions.filter((s) => s.id !== sessionId)
 
     let newPanes = get().panes.map((p) => {
       if (p.id !== paneId) return p
@@ -433,6 +434,13 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     } else {
       set({ sessions, panes: newPanes })
     }
+
+    // Clean up claude activity
+    const { [sessionId]: _, ...restActivities } = get().claudeActivities
+    if (_ !== undefined) {
+      set({ claudeActivities: restActivities })
+    }
+
     _scheduleSave()
   },
 
@@ -449,7 +457,9 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     const { focusedPaneId, splitLayout } = get()
     if (!focusedPaneId || !splitLayout) return
 
-    const session = await sessionService.create(projectId, cwd)
+    const session = _createSessionObject(projectId, cwd)
+    await sessionService.spawn(session.id, cwd)
+
     const newPaneId = crypto.randomUUID()
     const newPane: Pane = {
       id: newPaneId,
@@ -473,14 +483,30 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     const pane = get().panes.find((p) => p.id === paneId)
     if (!pane) return
 
+    // Update in-memory resume history immediately + persist to disk in background
+    let resumeHistory = get().resumeHistory
+    for (const sid of pane.sessionIds) {
+      const session = get().sessions.find((s) => s.id === sid)
+      const claudeId = session?.lastClaudeSessionId ?? session?.claudeSessionId
+      if (session && claudeId && _currentProjectId) {
+        const entry: ResumeHistoryEntry = {
+          claudeSessionId: claudeId,
+          sessionName: session.name,
+          claudeLastTitle: session.claudeLastTitle ?? null,
+          closedAt: new Date().toISOString(),
+        }
+        resumeHistory = [...resumeHistory.filter((e) => e.claudeSessionId !== claudeId), entry]
+        sessionService.appendResumeHistory(_currentProjectId, entry).catch(() => {})
+      }
+    }
+    set({ resumeHistory })
+
     for (const sid of pane.sessionIds) {
       await sessionService.close(sid)
     }
 
     const closedSet = new Set(pane.sessionIds)
-    const sessions = get().sessions.map((s) =>
-      closedSet.has(s.id) ? { ...s, status: 'closed' as const } : s
-    )
+    const sessions = get().sessions.filter((s) => !closedSet.has(s.id))
     const panes = get().panes.filter((p) => p.id !== paneId)
     const minimizedPanes = get().minimizedPanes.filter((m) => m.paneId !== paneId)
 
@@ -492,7 +518,13 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       focusedPaneId = panes[0]?.id ?? null
     }
 
-    set({ sessions, panes, splitLayout: layout, focusedPaneId, minimizedPanes })
+    // Clean up claude activities
+    const claudeActivities = { ...get().claudeActivities }
+    for (const sid of pane.sessionIds) {
+      delete claudeActivities[sid]
+    }
+
+    set({ sessions, panes, splitLayout: layout, focusedPaneId, minimizedPanes, claudeActivities })
     _scheduleSave()
   },
 
@@ -593,6 +625,9 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   handleClaudeSessionEvent: (event) => {
     if (event.source === 'stop') {
       // SessionEnd — Claude session terminated, preserve ID for resume, clear binding
+      const session = get().sessions.find((s) => s.id === event.wsidnSessionId)
+      const claudeId = session?.claudeSessionId ?? session?.lastClaudeSessionId
+
       const sessions = get().sessions.map((s) =>
         s.id === event.wsidnSessionId
           ? {
@@ -604,7 +639,21 @@ export const useSessionStore = create<SessionState>((set, get) => ({
           : s
       )
       const { [event.wsidnSessionId]: _, ...restActivities } = get().claudeActivities
-      set({ sessions, claudeActivities: restActivities })
+
+      // Add resume entry immediately (memory + disk)
+      if (session && claudeId && _currentProjectId) {
+        const entry: ResumeHistoryEntry = {
+          claudeSessionId: claudeId,
+          sessionName: session.name,
+          claudeLastTitle: session.claudeLastTitle ?? null,
+          closedAt: new Date().toISOString(),
+        }
+        const prev = get().resumeHistory.filter((e) => e.claudeSessionId !== claudeId)
+        set({ sessions, claudeActivities: restActivities, resumeHistory: [...prev, entry] })
+        sessionService.appendResumeHistory(_currentProjectId, entry).catch(() => {})
+      } else {
+        set({ sessions, claudeActivities: restActivities })
+      }
       return
     }
 
@@ -642,10 +691,9 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     set({ sessions })
   },
 
-  renameSession: async (sessionId, name) => {
+  renameSession: (sessionId, name) => {
     const trimmed = name.trim()
     if (!trimmed) return
-    await sessionService.rename(sessionId, trimmed)
     const sessions = get().sessions.map((s) =>
       s.id === sessionId ? { ...s, name: trimmed } : s
     )
@@ -653,7 +701,9 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   },
 
   createSessionInPaneWithCommand: async (paneId, projectId, cwd, command) => {
-    const session = await sessionService.create(projectId, cwd)
+    const session = _createSessionObject(projectId, cwd)
+    await sessionService.spawn(session.id, cwd)
+
     const newPanes = get().panes.map((p) => {
       if (p.id !== paneId) return p
       return {
@@ -682,7 +732,11 @@ export const useSessionStore = create<SessionState>((set, get) => ({
 
   createWorktreeSessionInPane: async (paneId, projectId, cwd, branchName) => {
     const result = await sessionService.createWorktree(projectId, cwd, branchName)
-    const { session, initScript } = result
+    const { worktreePath, initScript } = result
+
+    const session = _createSessionObject(projectId, worktreePath, `WT: ${branchName}`)
+    await sessionService.spawn(session.id, worktreePath)
+
     const newPanes = get().panes.map((p) => {
       if (p.id !== paneId) return p
       return {

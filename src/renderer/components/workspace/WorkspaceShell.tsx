@@ -43,11 +43,11 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
   const focusPaneFn = useSessionStore((s) => s.focusPane)
   const updateSplitRatio = useSessionStore((s) => s.updateSplitRatio)
   const handleClaudeSessionEvent = useSessionStore((s) => s.handleClaudeSessionEvent)
-  const loadOtherProjectSessions = useSessionStore((s) => s.loadOtherProjectSessions)
   const createSessionInPaneWithCommand = useSessionStore((s) => s.createSessionInPaneWithCommand)
   const createWorktreeSessionInPane = useSessionStore((s) => s.createWorktreeSessionInPane)
   const minimizePane = useSessionStore((s) => s.minimizePane)
   const restorePane = useSessionStore((s) => s.restorePane)
+  const resumeHistory = useSessionStore((s) => s.resumeHistory)
 
   const [activePanel, setActivePanel] = useState<PanelId | null>(null)
   const [dragState, setDragState] = useState<DragState | null>(null)
@@ -55,12 +55,8 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
   const overlayPanelRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    loadSessions(projectId)
-  }, [projectId, loadSessions])
-
-  useEffect(() => {
-    loadOtherProjectSessions(projectId)
-  }, [projectId, loadOtherProjectSessions])
+    if (project) loadSessions(projectId, project.path)
+  }, [projectId, project?.path, loadSessions])
 
   // Subscribe to Claude session binding events
   useEffect(() => {
@@ -121,12 +117,6 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
     if (!splitLayout) return []
     return collectDividers(splitLayout)
   }, [splitLayout])
-
-  // Closed sessions that have a lastClaudeSessionId — available for resume
-  const closedClaudeSessions = useMemo(
-    () => sessions.filter((s) => s.status === 'closed' && s.lastClaudeSessionId),
-    [sessions]
-  )
 
   const isSplit = visiblePanes.length > 1 || minimizedPanes.length > 0
 
@@ -303,7 +293,7 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
                       onCreateWorktreeSession={(branchName) =>
                         createWorktreeSessionInPane(pane.id, projectId, project.path, branchName)
                       }
-                      closedClaudeSessions={closedClaudeSessions}
+                      resumeHistory={resumeHistory}
                     />
                   </div>
                 )

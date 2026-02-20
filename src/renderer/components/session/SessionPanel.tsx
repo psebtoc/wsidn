@@ -20,9 +20,8 @@ export default function SessionPanel({
 }: SessionPanelProps) {
   const { t } = useTranslation()
   const claudeActivities = useSessionStore((s) => s.claudeActivities)
-  const otherProjectSessions = useSessionStore((s) => s.otherProjectSessions)
   const renamePane = useSessionStore((s) => s.renamePane)
-  const activeSessions = sessions.filter((s) => s.status === 'active')
+  const activeSessions = sessions
 
   const [collapsedPanes, setCollapsedPanes] = useState<Set<string>>(new Set())
   const [editingPaneId, setEditingPaneId] = useState<string | null>(null)
@@ -45,12 +44,7 @@ export default function SessionPanel({
     }, 500)
   }
 
-  // Count all active sessions (current + other projects)
-  const otherActiveCount = otherProjectSessions.reduce(
-    (sum, ps) => sum + ps.sessions.length,
-    0
-  )
-  const totalActive = activeSessions.length + otherActiveCount
+  const totalActive = activeSessions.length
 
   return (
     <div className="w-72 h-full bg-neutral-900 border-r border-neutral-700/50 flex flex-col select-none">
@@ -66,7 +60,7 @@ export default function SessionPanel({
 
       {/* Body */}
       <div className="flex-1 overflow-y-auto px-1 py-2 space-y-1">
-        {panes.length === 0 && otherProjectSessions.length === 0 ? (
+        {panes.length === 0 ? (
           <p className="text-[10px] text-neutral-600 px-2 py-2">{t('session.noActiveSessions')}</p>
         ) : (
           <>
@@ -109,41 +103,6 @@ export default function SessionPanel({
               )
             })}
 
-            {/* Other projects */}
-            {otherProjectSessions.length > 0 && (
-              <>
-                <div className="border-t border-neutral-800 mx-2 my-2" />
-                <p className="text-[10px] font-medium text-neutral-600 uppercase tracking-wider px-2 mb-1">
-                  {t('session.otherProjects')}
-                </p>
-                {otherProjectSessions.map((ps) => {
-                  const groupKey = `project-${ps.project.id}`
-                  const isCollapsed = collapsedPanes.has(groupKey)
-
-                  return (
-                    <div key={ps.project.id}>
-                      <button
-                        onClick={() => toggleCollapse(groupKey)}
-                        className="w-full text-[10px] font-medium text-neutral-500 uppercase tracking-wider px-2 py-1 flex items-center gap-1 hover:text-neutral-400 transition-colors"
-                      >
-                        <span className="text-[8px]">{isCollapsed ? '\u25B6' : '\u25BC'}</span>
-                        {ps.project.name}
-                      </button>
-                      {!isCollapsed &&
-                        ps.sessions.map((session) => (
-                          <SessionCard
-                            key={session.id}
-                            session={session}
-                            activity={null}
-                            onClick={undefined}
-                            onRefresh={undefined}
-                          />
-                        ))}
-                    </div>
-                  )
-                })}
-              </>
-            )}
           </>
         )}
       </div>

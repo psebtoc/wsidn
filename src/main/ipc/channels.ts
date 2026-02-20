@@ -5,16 +5,15 @@ export const IPC_CHANNELS = {
   PTY_RESIZE: 'pty:resize',
   PTY_EXIT: 'pty:exit',
 
-  // Session (request-response)
-  SESSION_CREATE: 'session:create',
+  // Session (request-response) — runtime PTY management only
   SESSION_CLOSE: 'session:close',
-  SESSION_LIST: 'session:list',
-  SESSION_LIST_ALL: 'session:listAll',
-  SESSION_UPDATE_TITLE: 'session:updateTitle',
-  SESSION_CREATE_WORKTREE: 'session:createWorktree',
   SESSION_SPAWN: 'session:spawn',
-  SESSION_CLEAR_STALE: 'session:clearStale',
-  SESSION_RENAME: 'session:rename',
+  SESSION_CREATE_WORKTREE: 'session:createWorktree',
+
+  // Resume history
+  RESUME_HISTORY_LIST: 'resumeHistory:list',
+  RESUME_HISTORY_APPEND: 'resumeHistory:append',
+  RESUME_HISTORY_APPEND_SYNC: 'resumeHistory:appendSync',
 
   // Project (request-response)
   PROJECT_CREATE: 'project:create',

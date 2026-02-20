@@ -12,21 +12,20 @@ contextBridge.exposeInMainWorld('wsidn', {
   },
 
   session: {
-    create: (projectId: string, cwd: string) =>
-      ipcRenderer.invoke('session:create', { projectId, cwd }),
     close: (sessionId: string) => ipcRenderer.invoke('session:close', { sessionId }),
-    list: (projectId: string) => ipcRenderer.invoke('session:list', { projectId }),
-    listAll: () => ipcRenderer.invoke('session:listAll'),
-    updateTitle: (sessionId: string, title: string) =>
-      ipcRenderer.invoke('session:updateTitle', { sessionId, title }),
     createWorktree: (projectId: string, cwd: string, branchName: string) =>
       ipcRenderer.invoke('session:createWorktree', { projectId, cwd, branchName }),
     spawn: (sessionId: string, cwd: string) =>
       ipcRenderer.invoke('session:spawn', { sessionId, cwd }),
-    clearStale: (projectId: string) =>
-      ipcRenderer.invoke('session:clearStale', { projectId }),
-    rename: (sessionId: string, name: string) =>
-      ipcRenderer.invoke('session:rename', { sessionId, name })
+  },
+
+  resumeHistory: {
+    list: (projectId: string) =>
+      ipcRenderer.invoke('resumeHistory:list', { projectId }),
+    append: (projectId: string, entry: Record<string, unknown>) =>
+      ipcRenderer.invoke('resumeHistory:append', { projectId, entry }),
+    appendSync: (projectId: string, entry: Record<string, unknown>) =>
+      ipcRenderer.sendSync('resumeHistory:appendSync', { projectId, entry }),
   },
 
   config: {

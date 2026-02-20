@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus, X, ChevronDown, Columns2, Rows2, SquareCheckBig, Minus } from 'lucide-react'
-import type { Pane, Session, SplitDirection } from '@renderer/types/project'
+import type { Pane, Session, SplitDirection, ResumeHistoryEntry } from '@renderer/types/project'
 import { useDndStore } from '@renderer/stores/dnd-store'
 import { useSessionStore } from '@renderer/stores/session-store'
 import Tooltip from '@renderer/components/ui/Tooltip'
@@ -26,7 +26,7 @@ interface PaneViewProps {
   onMinimize?: () => void
   onCreateSessionWithCommand?: (command: string) => void
   onCreateWorktreeSession?: (branchName: string) => void
-  closedClaudeSessions?: Session[]
+  resumeHistory?: ResumeHistoryEntry[]
 }
 
 export default function PaneView({
@@ -43,7 +43,7 @@ export default function PaneView({
   onMinimize,
   onCreateSessionWithCommand,
   onCreateWorktreeSession,
-  closedClaudeSessions = []
+  resumeHistory = []
 }: PaneViewProps) {
   const { t } = useTranslation()
   const [showTodo, setShowTodo] = useState(false)
@@ -619,13 +619,11 @@ export default function PaneView({
           onSelectClaude={() => onCreateSessionWithCommand?.('claude\n')}
           onSelectClaudeDangerously={() => onCreateSessionWithCommand?.('claude --dangerously-skip-permissions\n')}
           onSelectWorktree={() => setShowWorktreeDialog(true)}
-          resumableSessions={closedClaudeSessions
-            .filter((s): s is Session & { lastClaudeSessionId: string } => !!s.lastClaudeSessionId)
-            .map((s) => ({
-              id: s.id,
-              claudeSessionId: s.lastClaudeSessionId,
-              claudeLastTitle: s.claudeLastTitle,
-              name: s.name,
+          resumableSessions={resumeHistory.map((entry) => ({
+              id: entry.claudeSessionId,
+              claudeSessionId: entry.claudeSessionId,
+              claudeLastTitle: entry.claudeLastTitle,
+              name: entry.sessionName,
             }))}
           onResume={(claudeSessionId) =>
             onCreateSessionWithCommand?.(`claude --resume ${claudeSessionId}\n`)

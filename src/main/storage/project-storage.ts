@@ -43,7 +43,7 @@ export function listProjects(): Project[] {
 /**
  * Creates a new project with the given name and path.
  * Generates a UUID, creates the project directory, and initializes
- * project.json, sessions.json, and todos.json.
+ * project.json and initializes the project directory.
  */
 export function createProject(name: string, path: string): Project {
   const id = uuid()
@@ -59,7 +59,6 @@ export function createProject(name: string, path: string): Project {
   }
 
   writeJson(join(projectDir, 'project.json'), project)
-  writeJson(join(projectDir, 'sessions.json'), [])
 
   return project
 }
