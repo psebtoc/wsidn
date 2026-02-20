@@ -8,8 +8,9 @@ import type {
   ClaudeSessionEvent,
   ClaudeActivity,
   ResumeHistoryEntry,
-  MinimizedPane,
-  WorkspaceState
+  WorkspaceState,
+  WorkspaceStateV1,
+  MinimizedPaneV1,
 } from '@renderer/types/project'
 import {
   splitPaneNode,
@@ -17,7 +18,6 @@ import {
   removePane,
   getPaneIds,
   updateRatioAtPath,
-  findPanePosition
 } from '@renderer/utils/split-utils'
 
 // --- Runtime session counter (resets on app restart) ---
@@ -75,11 +75,11 @@ function _flushSave() {
 
   const state = useSessionStore.getState()
   const workspace: WorkspaceState = {
-    version: 1,
+    version: 2,
     panes: state.panes,
     splitLayout: state.splitLayout,
     focusedPaneId: state.focusedPaneId,
-    minimizedPanes: state.minimizedPanes,
+    minimizedPaneIds: state.minimizedPaneIds,
   }
   sessionService.saveWorkspace(projectId, workspace).catch(() => {})
 }
@@ -117,7 +117,7 @@ interface SessionState {
   splitLayout: SplitNode | null
   focusedPaneId: string | null
   claudeActivities: Record<string, ClaudeActivity>
-  minimizedPanes: MinimizedPane[]
+  minimizedPaneIds: string[]
   resumeHistory: ResumeHistoryEntry[]
 
   loadSessions: (projectId: string, cwd: string) => Promise<void>
@@ -165,24 +165,63 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   splitLayout: null,
   focusedPaneId: null,
   claudeActivities: {},
-  minimizedPanes: [],
+  minimizedPaneIds: [],
   resumeHistory: [],
 
   loadSessions: async (projectId: string, cwd: string) => {
     _currentProjectId = projectId
     _nextSessionNumber = 1
 
-    let workspace: WorkspaceState | null = null
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let raw: any = null
     try {
-      workspace = await sessionService.loadWorkspace(projectId)
+      raw = await sessionService.loadWorkspace(projectId)
     } catch {
       // ignore — fall through to default
     }
 
-    if (workspace && workspace.version === 1 && workspace.panes.length > 0) {
-      // Restore pane layout — create a fresh session for every pane (visible + minimized)
+    // Detect v1 and migrate to v2
+    let workspace: WorkspaceState | null = null
+    if (raw && raw.version === 1 && raw.panes?.length > 0) {
+      const v1 = raw as WorkspaceStateV1
+      let layout = v1.splitLayout
+      const minimizedEntries: MinimizedPaneV1[] = v1.minimizedPanes ?? []
+      const migratedMinimizedIds: string[] = []
+
+      // Re-insert minimized panes into the tree (they were removed in v1)
+      for (const entry of minimizedEntries) {
+        migratedMinimizedIds.push(entry.paneId)
+        if (!layout) {
+          layout = { type: 'leaf', paneId: entry.paneId }
+        } else if (entry.siblingPaneId && getPaneIds(layout).includes(entry.siblingPaneId)) {
+          layout = splitPaneNodeAt(layout, entry.siblingPaneId, entry.paneId, entry.direction, entry.paneWasFirst)
+        } else {
+          const leaf: SplitNode = { type: 'leaf', paneId: entry.paneId }
+          layout = {
+            type: 'branch',
+            direction: entry.direction,
+            ratio: 0.5,
+            first: entry.paneWasFirst ? leaf : layout,
+            second: entry.paneWasFirst ? layout : leaf,
+          }
+        }
+      }
+
+      workspace = {
+        version: 2,
+        panes: v1.panes,
+        splitLayout: layout,
+        focusedPaneId: v1.focusedPaneId,
+        minimizedPaneIds: migratedMinimizedIds,
+      }
+    } else if (raw && raw.version === 2 && raw.panes?.length > 0) {
+      workspace = raw as WorkspaceState
+    }
+
+    if (workspace && workspace.panes.length > 0) {
+      // Restore pane layout — create a fresh session for every pane
       const sessions: Session[] = []
-      const minimizedPaneIds = new Set((workspace.minimizedPanes ?? []).map((m) => m.paneId))
+      const minimizedSet = new Set(workspace.minimizedPaneIds)
 
       const panes: Pane[] = []
       for (const p of workspace.panes) {
@@ -195,32 +234,25 @@ export const useSessionStore = create<SessionState>((set, get) => ({
         })
       }
 
-      // Layout: minimized panes are already not in the split tree, keep as-is
+      // Validate layout: all pane IDs in tree must exist in panes
       let layout = workspace.splitLayout
-
-      // Validate layout contains only existing visible pane ids
       if (layout) {
         const layoutPaneIds = new Set(getPaneIds(layout))
-        const visiblePanes = panes.filter((p) => !minimizedPaneIds.has(p.id))
-        const validPanes = visiblePanes.filter((p) => layoutPaneIds.has(p.id))
-        if (validPanes.length === 0 && visiblePanes.length > 0) {
-          layout = { type: 'leaf', paneId: visiblePanes[0].id }
+        const knownPaneIds = new Set(panes.map((p) => p.id))
+        const allValid = [...layoutPaneIds].every((id) => knownPaneIds.has(id))
+        if (!allValid) {
+          // Fallback: single leaf with first pane
+          layout = { type: 'leaf', paneId: panes[0].id }
         }
       } else {
-        const visiblePanes = panes.filter((p) => !minimizedPaneIds.has(p.id))
-        if (visiblePanes.length > 0) {
-          layout = { type: 'leaf', paneId: visiblePanes[0].id }
-        }
+        layout = { type: 'leaf', paneId: panes[0].id }
       }
 
-      const minimizedPanes = workspace.minimizedPanes ?? []
-
+      // Focus: prefer saved, fallback to first non-minimized pane
       let focusedPaneId = workspace.focusedPaneId
-      const visiblePaneIds = new Set(
-        panes.filter((p) => !minimizedPaneIds.has(p.id)).map((p) => p.id)
-      )
-      if (!focusedPaneId || !visiblePaneIds.has(focusedPaneId)) {
-        focusedPaneId = [...visiblePaneIds][0] ?? null
+      const nonMinimizedIds = panes.filter((p) => !minimizedSet.has(p.id)).map((p) => p.id)
+      if (!focusedPaneId || minimizedSet.has(focusedPaneId)) {
+        focusedPaneId = nonMinimizedIds[0] ?? panes[0]?.id ?? null
       }
 
       set({
@@ -228,7 +260,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
         panes,
         splitLayout: layout,
         focusedPaneId,
-        minimizedPanes,
+        minimizedPaneIds: workspace.minimizedPaneIds,
       })
 
       // Spawn PTY for each session
@@ -242,7 +274,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
         panes: [],
         splitLayout: null,
         focusedPaneId: null,
-        minimizedPanes: [],
+        minimizedPaneIds: [],
       })
     }
 
@@ -290,13 +322,13 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       let layout = get().splitLayout
       layout = layout ? removePane(layout, sourcePaneId) : null
       panes = panes.filter((p) => p.sessionIds.length > 0)
-      // Also remove from minimizedPanes if it was there
-      const minimizedPanes = get().minimizedPanes.filter((m) => m.paneId !== sourcePaneId)
+      // Also remove from minimizedPaneIds if it was there
+      const minimizedPaneIds = get().minimizedPaneIds.filter((id) => id !== sourcePaneId)
 
       let focusedPaneId = get().focusedPaneId
       if (focusedPaneId === sourcePaneId) focusedPaneId = targetPaneId
 
-      set({ panes, splitLayout: layout, focusedPaneId, minimizedPanes })
+      set({ panes, splitLayout: layout, focusedPaneId, minimizedPaneIds })
     } else {
       set({ panes, focusedPaneId: targetPaneId })
     }
@@ -422,15 +454,15 @@ export const useSessionStore = create<SessionState>((set, get) => ({
         layout = layout ? removePane(layout, epId) : null
       }
       newPanes = newPanes.filter((p) => p.sessionIds.length > 0)
-      // Also clean up minimizedPanes
-      const minimizedPanes = get().minimizedPanes.filter((m) => !emptyPaneIds.includes(m.paneId))
+      // Also clean up minimizedPaneIds
+      const minimizedPaneIds = get().minimizedPaneIds.filter((id) => !emptyPaneIds.includes(id))
 
       let focusedPaneId = get().focusedPaneId
       if (focusedPaneId && emptyPaneIds.includes(focusedPaneId)) {
         focusedPaneId = newPanes[0]?.id ?? null
       }
 
-      set({ sessions, panes: newPanes, splitLayout: layout, focusedPaneId, minimizedPanes })
+      set({ sessions, panes: newPanes, splitLayout: layout, focusedPaneId, minimizedPaneIds })
     } else {
       set({ sessions, panes: newPanes })
     }
@@ -508,7 +540,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     const closedSet = new Set(pane.sessionIds)
     const sessions = get().sessions.filter((s) => !closedSet.has(s.id))
     const panes = get().panes.filter((p) => p.id !== paneId)
-    const minimizedPanes = get().minimizedPanes.filter((m) => m.paneId !== paneId)
+    const minimizedPaneIds = get().minimizedPaneIds.filter((id) => id !== paneId)
 
     let layout = get().splitLayout
     layout = layout ? removePane(layout, paneId) : null
@@ -524,7 +556,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       delete claudeActivities[sid]
     }
 
-    set({ sessions, panes, splitLayout: layout, focusedPaneId, minimizedPanes, claudeActivities })
+    set({ sessions, panes, splitLayout: layout, focusedPaneId, minimizedPaneIds, claudeActivities })
     _scheduleSave()
   },
 
@@ -549,74 +581,29 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   },
 
   minimizePane: (paneId) => {
-    const { splitLayout, panes, minimizedPanes } = get()
-    if (!splitLayout) return
+    const { minimizedPaneIds, focusedPaneId, splitLayout } = get()
+    if (minimizedPaneIds.includes(paneId)) return
 
-    // Record position in tree
-    const pos = findPanePosition(splitLayout, paneId)
-    const entry: MinimizedPane = {
-      paneId,
-      siblingPaneId: pos?.siblingPaneId ?? null,
-      direction: pos?.direction ?? 'horizontal',
-      paneWasFirst: pos?.paneWasFirst ?? true,
-    }
+    const newMinimized = [...minimizedPaneIds, paneId]
 
-    // Remove from split tree
-    const newLayout = removePane(splitLayout, paneId)
-
-    // Update focusedPaneId if needed
-    let focusedPaneId = get().focusedPaneId
+    // Move focus away from the minimized pane
+    let newFocus = focusedPaneId
     if (focusedPaneId === paneId) {
-      const visibleIds = newLayout ? getPaneIds(newLayout) : []
-      focusedPaneId = visibleIds[0] ?? null
+      const allIds = splitLayout ? getPaneIds(splitLayout) : []
+      const mSet = new Set(newMinimized)
+      newFocus = allIds.find((id) => !mSet.has(id)) ?? null
     }
 
-    set({
-      splitLayout: newLayout,
-      minimizedPanes: [...minimizedPanes, entry],
-      focusedPaneId,
-    })
+    set({ minimizedPaneIds: newMinimized, focusedPaneId: newFocus })
     _scheduleSave()
   },
 
   restorePane: (paneId) => {
-    const { splitLayout, panes, minimizedPanes } = get()
-    const entry = minimizedPanes.find((m) => m.paneId === paneId)
-    if (!entry) return
-
-    const newMinimized = minimizedPanes.filter((m) => m.paneId !== paneId)
-    let newLayout = splitLayout
-
-    if (!newLayout) {
-      // Tree is empty — set as root leaf
-      newLayout = { type: 'leaf', paneId }
-    } else if (
-      entry.siblingPaneId &&
-      getPaneIds(newLayout).includes(entry.siblingPaneId)
-    ) {
-      // Sibling still exists — insert next to it
-      newLayout = splitPaneNodeAt(
-        newLayout,
-        entry.siblingPaneId,
-        paneId,
-        entry.direction,
-        entry.paneWasFirst
-      )
-    } else {
-      // Sibling gone — insert at root
-      const rootLeaf: SplitNode = { type: 'leaf', paneId }
-      newLayout = {
-        type: 'branch',
-        direction: entry.direction,
-        ratio: 0.5,
-        first: entry.paneWasFirst ? rootLeaf : newLayout,
-        second: entry.paneWasFirst ? newLayout : rootLeaf,
-      }
-    }
+    const { minimizedPaneIds } = get()
+    if (!minimizedPaneIds.includes(paneId)) return
 
     set({
-      splitLayout: newLayout,
-      minimizedPanes: newMinimized,
+      minimizedPaneIds: minimizedPaneIds.filter((id) => id !== paneId),
       focusedPaneId: paneId,
     })
     _scheduleSave()

@@ -5,14 +5,14 @@ import { useSessionStore } from '@renderer/stores/session-store'
 import { sessionService } from '@renderer/services/session-service'
 import Button from '@renderer/components/ui/Button'
 import PaneView from './PaneView'
-import PaneStatusBar from './PaneStatusBar'
+import CollapsedPaneBar from './CollapsedPaneBar'
 import ActivityRibbon, { PANELS, type PanelId } from './ActivityRibbon'
 import SessionPanel from '@renderer/components/session/SessionPanel'
 import TemplatePanel from '@renderer/components/template/TemplatePanel'
 import ProjectSettingsPanel from '@renderer/components/settings/ProjectSettingsPanel'
-import { calculateBounds, collectDividers } from '@renderer/utils/split-utils'
+import { calculateBounds, collectDividers, getLeafDirection } from '@renderer/utils/split-utils'
 import type { SplitDirection } from '@renderer/types/project'
-import type { PaneBounds } from '@renderer/utils/split-utils'
+import type { PaneBounds, CalculateBoundsOptions } from '@renderer/utils/split-utils'
 
 interface DragState {
   path: string
@@ -32,7 +32,7 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
   const panes = useSessionStore((s) => s.panes)
   const splitLayout = useSessionStore((s) => s.splitLayout)
   const focusedPaneId = useSessionStore((s) => s.focusedPaneId)
-  const minimizedPanes = useSessionStore((s) => s.minimizedPanes)
+  const minimizedPaneIds = useSessionStore((s) => s.minimizedPaneIds)
   const loadSessions = useSessionStore((s) => s.loadSessions)
   const createFirstSession = useSessionStore((s) => s.createFirstSession)
   const createSessionInPane = useSessionStore((s) => s.createSessionInPane)
@@ -51,6 +51,7 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
 
   const [activePanel, setActivePanel] = useState<PanelId | null>(null)
   const [dragState, setDragState] = useState<DragState | null>(null)
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
   const overlayPanelRef = useRef<HTMLDivElement>(null)
 
@@ -65,14 +66,27 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
     })
   }, [handleClaudeSessionEvent])
 
-  // Visible panes = those not minimized
-  const minimizedPaneIds = useMemo(
-    () => new Set(minimizedPanes.map((m) => m.paneId)),
-    [minimizedPanes]
-  )
-  const visiblePanes = useMemo(
-    () => panes.filter((p) => !minimizedPaneIds.has(p.id)),
-    [panes, minimizedPaneIds]
+  // Track container pixel dimensions for collapsed pane sizing
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const ro = new ResizeObserver((entries) => {
+      const entry = entries[0]
+      if (entry) {
+        setContainerSize({
+          width: entry.contentRect.width,
+          height: entry.contentRect.height,
+        })
+      }
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  // Minimized pane set for quick lookup
+  const minimizedPaneIdSet = useMemo(
+    () => new Set(minimizedPaneIds),
+    [minimizedPaneIds]
   )
 
   // Focused session = active session of the focused pane
@@ -106,19 +120,29 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
     }
   }, [activePanelDef])
 
+  // Build options for bounds calculation (includes minimized pane info)
+  const boundsOptions = useMemo<CalculateBoundsOptions | undefined>(() => {
+    if (minimizedPaneIdSet.size === 0) return undefined
+    return {
+      minimizedPaneIds: minimizedPaneIdSet,
+      containerWidth: containerSize.width,
+      containerHeight: containerSize.height,
+    }
+  }, [minimizedPaneIdSet, containerSize])
+
   // Calculate pane bounds from split tree
   const paneBoundsMap = useMemo(() => {
     if (!splitLayout) return null
-    return calculateBounds(splitLayout)
-  }, [splitLayout])
+    return calculateBounds(splitLayout, undefined, boundsOptions)
+  }, [splitLayout, boundsOptions])
 
   // Collect divider positions from split tree
   const dividers = useMemo(() => {
     if (!splitLayout) return []
-    return collectDividers(splitLayout)
-  }, [splitLayout])
+    return collectDividers(splitLayout, undefined, '', boundsOptions)
+  }, [splitLayout, boundsOptions])
 
-  const isSplit = visiblePanes.length > 1 || minimizedPanes.length > 0
+  const isSplit = panes.length > 1
 
   // Drag resize handlers
   const handleDividerMouseDown = useCallback(
@@ -232,7 +256,7 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
         )}
 
         <div ref={containerRef} className="flex-1 relative bg-base">
-          {visiblePanes.length === 0 && panes.length === 0 ? (
+          {panes.length === 0 ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
                 <p className="text-fg-dim text-sm mb-3">{t('workspace.noActiveSessions')}</p>
@@ -245,33 +269,39 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
                 </Button>
               </div>
             </div>
-          ) : visiblePanes.length === 0 ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center">
-                <p className="text-fg-dim text-sm mb-3">{t('workspace.allPanesMinimized')}</p>
-                <p className="text-fg-dimmer text-xs">{t('workspace.restorePane')}</p>
-              </div>
-            </div>
           ) : (
             <>
-              {visiblePanes.map((pane) => {
+              {panes.map((pane) => {
                 const bounds = paneBoundsMap?.get(pane.id)
+                const isMinimized = minimizedPaneIdSet.has(pane.id)
+
+                const style = bounds
+                  ? {
+                      left: `${bounds.x * 100}%`,
+                      top: `${bounds.y * 100}%`,
+                      width: `${bounds.w * 100}%`,
+                      height: `${bounds.h * 100}%`,
+                    }
+                  : { left: 0, top: 0, width: '100%', height: '100%' }
+
+                if (isMinimized) {
+                  const direction = splitLayout
+                    ? getLeafDirection(splitLayout, pane.id) ?? 'vertical'
+                    : 'vertical'
+
+                  return (
+                    <div key={pane.id} className="absolute" style={style}>
+                      <CollapsedPaneBar
+                        pane={pane}
+                        direction={direction}
+                        onRestore={() => restorePane(pane.id)}
+                      />
+                    </div>
+                  )
+                }
 
                 return (
-                  <div
-                    key={pane.id}
-                    className="absolute"
-                    style={
-                      bounds
-                        ? {
-                            left: `${bounds.x * 100}%`,
-                            top: `${bounds.y * 100}%`,
-                            width: `${bounds.w * 100}%`,
-                            height: `${bounds.h * 100}%`,
-                          }
-                        : { left: 0, top: 0, width: '100%', height: '100%' }
-                    }
-                  >
+                  <div key={pane.id} className="absolute" style={style}>
                     <PaneView
                       pane={pane}
                       sessions={sessions}
@@ -301,6 +331,8 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
 
               {/* Draggable dividers */}
               {dividers.map((d) => {
+                if (d.disabled) return null
+
                 const isHorizontal = d.direction === 'horizontal'
                 // Position at the split point
                 const pos = isHorizontal
@@ -346,13 +378,6 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
             </>
           )}
         </div>
-
-        {/* Pane status bar at bottom */}
-        <PaneStatusBar
-          panes={panes}
-          minimizedPanes={minimizedPanes}
-          onRestore={restorePane}
-        />
       </div>
     </div>
   )

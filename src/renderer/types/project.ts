@@ -104,19 +104,29 @@ export interface Pane {
   activeSessionId: string | null
 }
 
-export interface MinimizedPane {
+/** @deprecated v1 format — kept for migration only */
+export interface MinimizedPaneV1 {
   paneId: string
   siblingPaneId: string | null
   direction: SplitDirection
   paneWasFirst: boolean
 }
 
-export interface WorkspaceState {
+/** v1 workspace — used for migration detection */
+export interface WorkspaceStateV1 {
   version: 1
   panes: Pane[]
   splitLayout: SplitNode | null
   focusedPaneId: string | null
-  minimizedPanes: MinimizedPane[]
+  minimizedPanes: MinimizedPaneV1[]
+}
+
+export interface WorkspaceState {
+  version: 2
+  panes: Pane[]
+  splitLayout: SplitNode | null
+  focusedPaneId: string | null
+  minimizedPaneIds: string[]
 }
 
 export interface SplitLeaf {
