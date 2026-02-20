@@ -5,12 +5,11 @@ import { useSessionStore } from '@renderer/stores/session-store'
 import { sessionService } from '@renderer/services/session-service'
 import Button from '@renderer/components/ui/Button'
 import PaneView from './PaneView'
-import CollapsedPaneBar from './CollapsedPaneBar'
 import ActivityRibbon, { PANELS, type PanelId } from './ActivityRibbon'
 import SessionPanel from '@renderer/components/session/SessionPanel'
 import TemplatePanel from '@renderer/components/template/TemplatePanel'
 import ProjectSettingsPanel from '@renderer/components/settings/ProjectSettingsPanel'
-import { calculateBounds, collectDividers, getLeafDirection } from '@renderer/utils/split-utils'
+import { calculateBounds, collectDividers } from '@renderer/utils/split-utils'
 import type { SplitDirection } from '@renderer/types/project'
 import type { PaneBounds, CalculateBoundsOptions } from '@renderer/utils/split-utils'
 
@@ -51,7 +50,6 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
 
   const [activePanel, setActivePanel] = useState<PanelId | null>(null)
   const [dragState, setDragState] = useState<DragState | null>(null)
-  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
   const overlayPanelRef = useRef<HTMLDivElement>(null)
 
@@ -65,23 +63,6 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
       handleClaudeSessionEvent(event)
     })
   }, [handleClaudeSessionEvent])
-
-  // Track container pixel dimensions for collapsed pane sizing
-  useEffect(() => {
-    const el = containerRef.current
-    if (!el) return
-    const ro = new ResizeObserver((entries) => {
-      const entry = entries[0]
-      if (entry) {
-        setContainerSize({
-          width: entry.contentRect.width,
-          height: entry.contentRect.height,
-        })
-      }
-    })
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
 
   // Minimized pane set for quick lookup
   const minimizedPaneIdSet = useMemo(
@@ -123,12 +104,8 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
   // Build options for bounds calculation (includes minimized pane info)
   const boundsOptions = useMemo<CalculateBoundsOptions | undefined>(() => {
     if (minimizedPaneIdSet.size === 0) return undefined
-    return {
-      minimizedPaneIds: minimizedPaneIdSet,
-      containerWidth: containerSize.width,
-      containerHeight: containerSize.height,
-    }
-  }, [minimizedPaneIdSet, containerSize])
+    return { minimizedPaneIds: minimizedPaneIdSet }
+  }, [minimizedPaneIdSet])
 
   // Calculate pane bounds from split tree
   const paneBoundsMap = useMemo(() => {
@@ -272,9 +249,9 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
           ) : (
             <>
               {panes.map((pane) => {
-                const bounds = paneBoundsMap?.get(pane.id)
-                const isMinimized = minimizedPaneIdSet.has(pane.id)
+                if (minimizedPaneIdSet.has(pane.id)) return null
 
+                const bounds = paneBoundsMap?.get(pane.id)
                 const style = bounds
                   ? {
                       left: `${bounds.x * 100}%`,
@@ -283,22 +260,6 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
                       height: `${bounds.h * 100}%`,
                     }
                   : { left: 0, top: 0, width: '100%', height: '100%' }
-
-                if (isMinimized) {
-                  const direction = splitLayout
-                    ? getLeafDirection(splitLayout, pane.id) ?? 'vertical'
-                    : 'vertical'
-
-                  return (
-                    <div key={pane.id} className="absolute" style={style}>
-                      <CollapsedPaneBar
-                        pane={pane}
-                        direction={direction}
-                        onRestore={() => restorePane(pane.id)}
-                      />
-                    </div>
-                  )
-                }
 
                 return (
                   <div key={pane.id} className="absolute" style={style}>

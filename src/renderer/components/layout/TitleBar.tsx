@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ChevronDown, ArrowLeft, Settings } from 'lucide-react'
 import { useProjectStore } from '@renderer/stores/project-store'
+import { useSessionStore } from '@renderer/stores/session-store'
 import WindowControls from './WindowControls'
 import AppSettingsModal from '@renderer/components/settings/AppSettingsModal'
 
@@ -13,6 +14,11 @@ export default function TitleBar() {
   const clearActiveProject = useProjectStore((s) => s.clearActiveProject)
 
   const activeProject = projects.find((p) => p.id === activeProjectId)
+
+  const panes = useSessionStore((s) => s.panes)
+  const minimizedPaneIds = useSessionStore((s) => s.minimizedPaneIds)
+  const claudeActivities = useSessionStore((s) => s.claudeActivities)
+  const restorePane = useSessionStore((s) => s.restorePane)
 
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -88,7 +94,36 @@ export default function TitleBar() {
         </div>
       )}
 
-      <div className="flex-1" />
+      {/* Center: minimized pane pills */}
+      <div className="flex-1 flex items-center justify-center overflow-hidden">
+        {minimizedPaneIds.length > 0 && (
+          <div
+            className="flex items-center gap-1"
+            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+          >
+            {minimizedPaneIds.map((paneId) => {
+              const pane = panes.find((p) => p.id === paneId)
+              if (!pane) return null
+              const hasActivity = pane.sessionIds.some((sid) => claudeActivities[sid])
+              return (
+                <button
+                  key={paneId}
+                  onClick={() => restorePane(paneId)}
+                  className="h-[18px] px-2 text-[11px] leading-none text-fg-dim
+                             bg-elevated rounded-full cursor-pointer
+                             hover:text-fg-secondary hover:bg-hover transition-colors
+                             flex items-center gap-1"
+                >
+                  {hasActivity && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-orange-400 shrink-0" />
+                  )}
+                  {pane.name}
+                </button>
+              )
+            })}
+          </div>
+        )}
+      </div>
 
       {/* Settings */}
       <div style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>

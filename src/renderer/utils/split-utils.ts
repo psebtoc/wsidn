@@ -17,13 +17,7 @@ export interface DividerInfo {
 
 export interface CalculateBoundsOptions {
   minimizedPaneIds: Set<string>
-  containerWidth: number
-  containerHeight: number
-  collapsedSize?: number // default 28
 }
-
-const DEFAULT_COLLAPSED_SIZE = 28
-const FALLBACK_COLLAPSED_RATIO = 0.05
 
 /**
  * Check if every leaf in a subtree is minimized.
@@ -35,11 +29,10 @@ export function isFullyMinimized(node: SplitNode, minimizedIds: Set<string>): bo
 
 /**
  * Compute the effective ratio for a branch, accounting for minimized children.
- * Returns the original ratio if no children are minimized.
+ * Minimized side gets 0% — it won't be rendered, sibling takes full space.
  */
 function computeEffectiveRatio(
   node: SplitNode & { type: 'branch' },
-  bounds: PaneBounds,
   options?: CalculateBoundsOptions
 ): number {
   if (!options || options.minimizedPaneIds.size === 0) return node.ratio
@@ -50,16 +43,7 @@ function computeEffectiveRatio(
   if (firstMinimized && secondMinimized) return 0.5
   if (!firstMinimized && !secondMinimized) return node.ratio
 
-  const collapsedSize = options.collapsedSize ?? DEFAULT_COLLAPSED_SIZE
-  const axisPx =
-    node.direction === 'horizontal'
-      ? options.containerWidth * bounds.w
-      : options.containerHeight * bounds.h
-
-  if (axisPx <= 0) return firstMinimized ? FALLBACK_COLLAPSED_RATIO : 1 - FALLBACK_COLLAPSED_RATIO
-
-  const collapsedFraction = Math.min(collapsedSize / axisPx, 0.5)
-  return firstMinimized ? collapsedFraction : 1 - collapsedFraction
+  return firstMinimized ? 0 : 1
 }
 
 /**
@@ -94,7 +78,7 @@ export function calculateBounds(
     return new Map([[node.paneId, bounds]])
   }
 
-  const effectiveRatio = computeEffectiveRatio(node, bounds, options)
+  const effectiveRatio = computeEffectiveRatio(node, options)
   const [fb, sb] = splitBounds(node.direction, effectiveRatio, bounds)
 
   return new Map([
@@ -114,7 +98,7 @@ export function collectDividers(
 ): DividerInfo[] {
   if (node.type === 'leaf') return []
 
-  const effectiveRatio = computeEffectiveRatio(node, bounds, options)
+  const effectiveRatio = computeEffectiveRatio(node, options)
   const [fb, sb] = splitBounds(node.direction, effectiveRatio, bounds)
 
   const disabled =
