@@ -12,6 +12,74 @@ export interface DividerInfo {
   direction: SplitDirection
   bounds: PaneBounds
   ratio: number
+  disabled: boolean
+}
+
+export interface CalculateBoundsOptions {
+  minimizedPaneIds: Set<string>
+  containerWidth: number
+  containerHeight: number
+  collapsedSize?: number // default 28
+}
+
+const DEFAULT_COLLAPSED_SIZE = 28
+const FALLBACK_COLLAPSED_RATIO = 0.05
+
+/**
+ * Check if every leaf in a subtree is minimized.
+ */
+export function isFullyMinimized(node: SplitNode, minimizedIds: Set<string>): boolean {
+  if (node.type === 'leaf') return minimizedIds.has(node.paneId)
+  return isFullyMinimized(node.first, minimizedIds) && isFullyMinimized(node.second, minimizedIds)
+}
+
+/**
+ * Compute the effective ratio for a branch, accounting for minimized children.
+ * Returns the original ratio if no children are minimized.
+ */
+function computeEffectiveRatio(
+  node: SplitNode & { type: 'branch' },
+  bounds: PaneBounds,
+  options?: CalculateBoundsOptions
+): number {
+  if (!options || options.minimizedPaneIds.size === 0) return node.ratio
+
+  const firstMinimized = isFullyMinimized(node.first, options.minimizedPaneIds)
+  const secondMinimized = isFullyMinimized(node.second, options.minimizedPaneIds)
+
+  if (firstMinimized && secondMinimized) return 0.5
+  if (!firstMinimized && !secondMinimized) return node.ratio
+
+  const collapsedSize = options.collapsedSize ?? DEFAULT_COLLAPSED_SIZE
+  const axisPx =
+    node.direction === 'horizontal'
+      ? options.containerWidth * bounds.w
+      : options.containerHeight * bounds.h
+
+  if (axisPx <= 0) return firstMinimized ? FALLBACK_COLLAPSED_RATIO : 1 - FALLBACK_COLLAPSED_RATIO
+
+  const collapsedFraction = Math.min(collapsedSize / axisPx, 0.5)
+  return firstMinimized ? collapsedFraction : 1 - collapsedFraction
+}
+
+/**
+ * Compute first/second bounds for a branch given effective ratio.
+ */
+function splitBounds(
+  direction: SplitDirection,
+  ratio: number,
+  bounds: PaneBounds
+): [PaneBounds, PaneBounds] {
+  if (direction === 'horizontal') {
+    return [
+      { x: bounds.x, y: bounds.y, w: bounds.w * ratio, h: bounds.h },
+      { x: bounds.x + bounds.w * ratio, y: bounds.y, w: bounds.w * (1 - ratio), h: bounds.h },
+    ]
+  }
+  return [
+    { x: bounds.x, y: bounds.y, w: bounds.w, h: bounds.h * ratio },
+    { x: bounds.x, y: bounds.y + bounds.h * ratio, w: bounds.w, h: bounds.h * (1 - ratio) },
+  ]
 }
 
 /**
@@ -19,24 +87,20 @@ export interface DividerInfo {
  */
 export function calculateBounds(
   node: SplitNode,
-  bounds: PaneBounds = { x: 0, y: 0, w: 1, h: 1 }
+  bounds: PaneBounds = { x: 0, y: 0, w: 1, h: 1 },
+  options?: CalculateBoundsOptions
 ): Map<string, PaneBounds> {
   if (node.type === 'leaf') {
     return new Map([[node.paneId, bounds]])
   }
 
-  const { direction, ratio, first, second } = node
-  let fb: PaneBounds, sb: PaneBounds
+  const effectiveRatio = computeEffectiveRatio(node, bounds, options)
+  const [fb, sb] = splitBounds(node.direction, effectiveRatio, bounds)
 
-  if (direction === 'horizontal') {
-    fb = { x: bounds.x, y: bounds.y, w: bounds.w * ratio, h: bounds.h }
-    sb = { x: bounds.x + bounds.w * ratio, y: bounds.y, w: bounds.w * (1 - ratio), h: bounds.h }
-  } else {
-    fb = { x: bounds.x, y: bounds.y, w: bounds.w, h: bounds.h * ratio }
-    sb = { x: bounds.x, y: bounds.y + bounds.h * ratio, w: bounds.w, h: bounds.h * (1 - ratio) }
-  }
-
-  return new Map([...calculateBounds(first, fb), ...calculateBounds(second, sb)])
+  return new Map([
+    ...calculateBounds(node.first, fb, options),
+    ...calculateBounds(node.second, sb, options),
+  ])
 }
 
 /**
@@ -45,25 +109,24 @@ export function calculateBounds(
 export function collectDividers(
   node: SplitNode,
   bounds: PaneBounds = { x: 0, y: 0, w: 1, h: 1 },
-  path: string = ''
+  path: string = '',
+  options?: CalculateBoundsOptions
 ): DividerInfo[] {
   if (node.type === 'leaf') return []
 
-  const { direction, ratio, first, second } = node
-  let fb: PaneBounds, sb: PaneBounds
+  const effectiveRatio = computeEffectiveRatio(node, bounds, options)
+  const [fb, sb] = splitBounds(node.direction, effectiveRatio, bounds)
 
-  if (direction === 'horizontal') {
-    fb = { x: bounds.x, y: bounds.y, w: bounds.w * ratio, h: bounds.h }
-    sb = { x: bounds.x + bounds.w * ratio, y: bounds.y, w: bounds.w * (1 - ratio), h: bounds.h }
-  } else {
-    fb = { x: bounds.x, y: bounds.y, w: bounds.w, h: bounds.h * ratio }
-    sb = { x: bounds.x, y: bounds.y + bounds.h * ratio, w: bounds.w, h: bounds.h * (1 - ratio) }
-  }
+  const disabled =
+    !!options &&
+    options.minimizedPaneIds.size > 0 &&
+    (isFullyMinimized(node.first, options.minimizedPaneIds) ||
+      isFullyMinimized(node.second, options.minimizedPaneIds))
 
   return [
-    { path, direction, bounds, ratio },
-    ...collectDividers(first, fb, path ? `${path}/first` : 'first'),
-    ...collectDividers(second, sb, path ? `${path}/second` : 'second'),
+    { path, direction: node.direction, bounds, ratio: effectiveRatio, disabled },
+    ...collectDividers(node.first, fb, path ? `${path}/first` : 'first', options),
+    ...collectDividers(node.second, sb, path ? `${path}/second` : 'second', options),
   ]
 }
 
@@ -118,43 +181,20 @@ export function removePane(node: SplitNode, paneId: string): SplitNode | null {
 }
 
 /**
- * Find a pane's position in the split tree: its sibling, direction, and whether
- * the pane was the first (left/top) or second (right/bottom) child.
- * Returns null if the pane is not found or is the root.
+ * Get the split direction of the branch that is the immediate parent of a leaf pane.
+ * Returns null if the pane is the root or not found.
  */
-export interface PanePosition {
-  siblingPaneId: string | null
-  direction: SplitDirection
-  paneWasFirst: boolean
-}
-
-export function findPanePosition(
-  node: SplitNode,
-  paneId: string
-): PanePosition | null {
+export function getLeafDirection(node: SplitNode, paneId: string): SplitDirection | null {
   if (node.type === 'leaf') return null
 
-  // Check if the target pane is a direct child of this branch
-  const firstIds = node.first.type === 'leaf' ? [node.first.paneId] : getPaneIds(node.first)
-  const secondIds = node.second.type === 'leaf' ? [node.second.paneId] : getPaneIds(node.second)
-
-  if (node.first.type === 'leaf' && node.first.paneId === paneId) {
-    // Pane is the first child — sibling is the first leaf of the second subtree
-    const siblingId = node.second.type === 'leaf' ? node.second.paneId : getPaneIds(node.second)[0] ?? null
-    return { siblingPaneId: siblingId, direction: node.direction, paneWasFirst: true }
+  if (
+    (node.first.type === 'leaf' && node.first.paneId === paneId) ||
+    (node.second.type === 'leaf' && node.second.paneId === paneId)
+  ) {
+    return node.direction
   }
 
-  if (node.second.type === 'leaf' && node.second.paneId === paneId) {
-    // Pane is the second child — sibling is the first leaf of the first subtree
-    const siblingId = node.first.type === 'leaf' ? node.first.paneId : getPaneIds(node.first)[0] ?? null
-    return { siblingPaneId: siblingId, direction: node.direction, paneWasFirst: false }
-  }
-
-  // Recurse into children
-  if (firstIds.includes(paneId)) return findPanePosition(node.first, paneId)
-  if (secondIds.includes(paneId)) return findPanePosition(node.second, paneId)
-
-  return null
+  return getLeafDirection(node.first, paneId) ?? getLeafDirection(node.second, paneId)
 }
 
 /**
