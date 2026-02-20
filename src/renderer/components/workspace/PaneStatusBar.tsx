@@ -10,9 +10,7 @@ interface PaneStatusBarProps {
 export default function PaneStatusBar({ panes, minimizedPanes, onRestore }: PaneStatusBarProps) {
   const claudeActivities = useSessionStore((s) => s.claudeActivities)
 
-  if (minimizedPanes.length === 0) {
-    return <div className="h-[1px] bg-neutral-800 shrink-0" />
-  }
+  if (minimizedPanes.length === 0) return null
 
   return (
     <div className="h-[22px] bg-[#181818] border-t border-neutral-800 flex items-center gap-px px-1 shrink-0">

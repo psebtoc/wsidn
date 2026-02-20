@@ -27,6 +27,16 @@ body {
   background: rgba(255, 255, 255, 0.25);
 }
 
+/* Tab scroll — hidden scrollbar, wheel/trackpad scroll + auto-scroll active tab */
+.tab-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.tab-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 /* Claude activity pulse animation */
 @keyframes pulse-dot {
   0%, 100% { opacity: 1; }

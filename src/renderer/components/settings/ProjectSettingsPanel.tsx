@@ -35,7 +35,7 @@ export default function ProjectSettingsPanel({ projectId }: ProjectSettingsPanel
   return (
     <div className="w-72 h-full bg-neutral-900 border-l border-neutral-700/50 flex flex-col select-none shrink-0">
       {/* Header */}
-      <div className="px-3 py-3 border-b border-neutral-800">
+      <div className="h-12 px-3 border-b border-neutral-800 flex items-center shrink-0">
         <span className="text-xs font-medium text-neutral-300 uppercase tracking-wider">
           Project Settings
         </span>

@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import type { Pane, Session, SplitDirection } from '@renderer/types/project'
 import { useDndStore } from '@renderer/stores/dnd-store'
 import { useSessionStore } from '@renderer/stores/session-store'
@@ -54,6 +54,13 @@ export default function PaneView({
   const [editValue, setEditValue] = useState('')
   const editInputRef = useRef<HTMLInputElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
+  const tabScrollRef = useRef<HTMLDivElement>(null)
+  const activeTabRef = useRef<HTMLButtonElement | HTMLDivElement>(null)
+
+  // Custom scrollbar state
+  const [scrollInfo, setScrollInfo] = useState({ scrollLeft: 0, scrollWidth: 0, clientWidth: 0 })
+  const [tabBarHovered, setTabBarHovered] = useState(false)
+  const [thumbDragging, setThumbDragging] = useState(false)
 
   const dragging = useDndStore((s) => s.dragging)
   const setDragging = useDndStore((s) => s.setDragging)
@@ -67,6 +74,74 @@ export default function PaneView({
       requestAnimationFrame(() => editInputRef.current?.select())
     }
   }, [editingSessionId])
+
+  // Auto-scroll active tab into view
+  useEffect(() => {
+    if (activeTabRef.current) {
+      activeTabRef.current.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' })
+    }
+  }, [pane.activeSessionId])
+
+  // Track scroll state for custom scrollbar
+  useEffect(() => {
+    const el = tabScrollRef.current
+    if (!el) return
+
+    const update = () => {
+      setScrollInfo({
+        scrollLeft: el.scrollLeft,
+        scrollWidth: el.scrollWidth,
+        clientWidth: el.clientWidth,
+      })
+    }
+
+    el.addEventListener('scroll', update, { passive: true })
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    update()
+
+    return () => {
+      el.removeEventListener('scroll', update)
+      ro.disconnect()
+    }
+  }, [pane.sessionIds.length])
+
+  const hasTabOverflow = scrollInfo.scrollWidth > scrollInfo.clientWidth + 1
+  const showScrollbar = hasTabOverflow && (tabBarHovered || thumbDragging)
+
+  const thumbStyle = useMemo(() => {
+    if (!hasTabOverflow) return { left: '0%', width: '0%' }
+    const ratio = scrollInfo.clientWidth / scrollInfo.scrollWidth
+    const leftPct = (scrollInfo.scrollLeft / scrollInfo.scrollWidth) * 100
+    const widthPct = ratio * 100
+    return { left: `${leftPct}%`, width: `${widthPct}%` }
+  }, [hasTabOverflow, scrollInfo])
+
+  const handleThumbMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const el = tabScrollRef.current
+    if (!el) return
+
+    setThumbDragging(true)
+    const startX = e.clientX
+    const startScrollLeft = el.scrollLeft
+
+    const handleMouseMove = (ev: MouseEvent) => {
+      const dx = ev.clientX - startX
+      const scrollRatio = el.scrollWidth / el.clientWidth
+      el.scrollLeft = startScrollLeft + dx * scrollRatio
+    }
+
+    const handleMouseUp = () => {
+      setThumbDragging(false)
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseup', handleMouseUp)
+    }
+
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('mouseup', handleMouseUp)
+  }, [])
 
   const paneSessions = pane.sessionIds
     .map((id) => sessions.find((s) => s.id === id))
@@ -274,9 +349,13 @@ export default function PaneView({
   return (
     <div className="w-full h-full flex flex-col" onClick={onFocus}>
       {/* Tab bar */}
-      <div className="flex h-[35px] bg-neutral-950 shrink-0">
+      <div
+        className="flex h-[35px] bg-neutral-950 shrink-0 relative"
+        onMouseEnter={() => setTabBarHovered(true)}
+        onMouseLeave={() => setTabBarHovered(false)}
+      >
         {/* Tabs scroll area */}
-        <div className="flex items-stretch overflow-x-auto min-w-0">
+        <div ref={tabScrollRef} className="flex items-stretch tab-scroll min-w-0">
           {paneSessions.map((session, index) => {
             const isActive = session.id === pane.activeSessionId
             const isDragged = dragging?.sessionId === session.id && dragging?.sourcePaneId === pane.id
@@ -286,6 +365,7 @@ export default function PaneView({
               return (
                 <div
                   key={session.id}
+                  ref={isActive ? activeTabRef as React.Ref<HTMLDivElement> : undefined}
                   className={`relative flex items-center px-1 shrink-0 ${
                     isActive
                       ? `border border-neutral-700 border-b-[#1a1a1a] bg-[#1a1a1a] ${isFocused ? 'border-t-blue-500' : ''} ${index === 0 ? 'border-l-0' : ''}`
@@ -316,6 +396,7 @@ export default function PaneView({
             return (
               <button
                 key={session.id}
+                ref={isActive ? activeTabRef as React.Ref<HTMLButtonElement> : undefined}
                 draggable
                 onDragStart={(e) => handleTabDragStart(e, session.id)}
                 onDragEnd={handleTabDragEnd}
@@ -403,6 +484,7 @@ export default function PaneView({
               </button>
             </Tooltip>
           </div>
+          <div className="w-px h-3.5 bg-neutral-700/50 mx-0.5" />
           <Tooltip content="Split right" side="bottom">
             <button
               onClick={(e) => {
@@ -433,6 +515,7 @@ export default function PaneView({
               </svg>
             </button>
           </Tooltip>
+          <div className="w-px h-3.5 bg-neutral-700/50 mx-0.5" />
           {/* TODO toggle */}
           <Tooltip content="Toggle TODO" side="bottom">
             <button
@@ -452,6 +535,7 @@ export default function PaneView({
               </svg>
             </button>
           </Tooltip>
+          {isSplit && <div className="w-px h-3.5 bg-neutral-700/50 mx-0.5" />}
           {isSplit && onMinimize && (
             <Tooltip content="Minimize pane" side="bottom">
               <button
@@ -485,6 +569,20 @@ export default function PaneView({
             </Tooltip>
           )}
         </div>
+
+        {/* Custom overlay scrollbar */}
+        {showScrollbar && (
+          <div
+            className="absolute bottom-0 left-0 h-[3px] z-10"
+            style={{ width: scrollInfo.clientWidth }}
+          >
+            <div
+              className="absolute h-full rounded-full bg-white/20 hover:bg-white/40 transition-colors"
+              style={thumbStyle}
+              onMouseDown={handleThumbMouseDown}
+            />
+          </div>
+        )}
       </div>
 
       {/* Content area: terminal + optional TODO panel */}

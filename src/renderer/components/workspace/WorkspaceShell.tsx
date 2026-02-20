@@ -187,40 +187,46 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
 
   return (
     <div className="flex h-full w-full">
-      {/* Activity ribbon — left side */}
-      <ActivityRibbon activePanel={activePanel} onTogglePanel={handleTogglePanel} />
+      {/* Left sidebar group — spacer pushes ribbon + panels below tab bar level */}
+      <div className="flex flex-col shrink-0">
+        <div className="h-[35px] bg-neutral-950 border-b border-b-neutral-700 shrink-0" />
+        <div className="flex flex-1 min-h-0">
+          <ActivityRibbon activePanel={activePanel} onTogglePanel={handleTogglePanel} />
 
-      {/* Persistent panels (take space in layout) */}
-      {activePanelDef?.mode === 'persistent' && activePanel === 'session' && (
-        <SessionPanel
-          sessions={sessions}
-          panes={panes}
-          projectId={projectId}
-          onFocusSession={(paneId, sessionId) => {
-            focusPaneFn(paneId)
-            setActiveSessionInPane(paneId, sessionId)
-          }}
-        />
-      )}
-      {activePanelDef?.mode === 'persistent' && activePanel === 'template' && (
-        <TemplatePanel
-          projectId={projectId}
-          onInsert={(content) => {
-            if (activeSessionId) sessionService.terminalInput(activeSessionId, content)
-          }}
-        />
-      )}
-      {activePanel === 'projectSettings' && (
-        <ProjectSettingsPanel projectId={projectId} />
-      )}
+          {/* Persistent panels (take space in layout) */}
+          {activePanelDef?.mode === 'persistent' && activePanel === 'session' && (
+            <SessionPanel
+              sessions={sessions}
+              panes={panes}
+              projectId={projectId}
+              onFocusSession={(paneId, sessionId) => {
+                focusPaneFn(paneId)
+                setActiveSessionInPane(paneId, sessionId)
+              }}
+            />
+          )}
+          {activePanelDef?.mode === 'persistent' && activePanel === 'template' && (
+            <TemplatePanel
+              projectId={projectId}
+              onInsert={(content) => {
+                if (activeSessionId) sessionService.terminalInput(activeSessionId, content)
+              }}
+            />
+          )}
+          {activePanel === 'projectSettings' && (
+            <ProjectSettingsPanel projectId={projectId} />
+          )}
+        </div>
+      </div>
 
       {/* Main area (relative for overlay positioning) */}
       <div className="flex-1 flex flex-col min-w-0 relative">
-        {/* Overlay panels (float over content) */}
+        {/* Overlay panels (float over content, below tab bar) */}
         {activePanelDef?.mode === 'overlay' && activePanel === 'template' && (
           <div
             ref={overlayPanelRef}
-            className="absolute left-0 top-0 bottom-0 z-30 shadow-xl shadow-black/40"
+            className="absolute left-0 top-[35px] bottom-0 z-30"
+            style={{ boxShadow: '6px 0 16px rgba(0,0,0,0.4)' }}
           >
             <TemplatePanel
               projectId={projectId}
@@ -311,7 +317,7 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
                 return (
                   <div
                     key={d.path || 'root'}
-                    className={`absolute z-20 ${
+                    className={`absolute z-20 group ${
                       isHorizontal ? 'cursor-col-resize' : 'cursor-row-resize'
                     }`}
                     style={
@@ -335,7 +341,7 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
                   >
                     {/* Visible 1px line */}
                     <div
-                      className={`absolute bg-neutral-700 ${
+                      className={`absolute bg-neutral-700 transition-colors duration-150 delay-300 group-hover:bg-blue-500 ${
                         isHorizontal
                           ? 'left-[2px] top-0 bottom-0 w-px'
                           : 'top-[3px] left-0 right-0 h-px'

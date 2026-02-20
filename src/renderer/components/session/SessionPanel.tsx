@@ -52,7 +52,7 @@ export default function SessionPanel({
   return (
     <div className="w-72 h-full bg-neutral-900 border-r border-neutral-700/50 flex flex-col select-none">
       {/* Header */}
-      <div className="px-3 py-3 border-b border-neutral-800 flex items-center justify-between">
+      <div className="h-12 px-3 border-b border-neutral-800 flex items-center justify-between shrink-0">
         <span className="text-xs font-medium text-neutral-300 uppercase tracking-wider">
           Sessions
         </span>
