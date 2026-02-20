@@ -17,6 +17,7 @@ interface AppConfig {
   theme: 'dark' | 'light'
   defaultShell: string
   terminal: TerminalConfig
+  language: 'ko' | 'en'
 }
 
 const DEFAULT_TERMINAL: TerminalConfig = {
@@ -33,6 +34,7 @@ const DEFAULT_CONFIG: AppConfig = {
   theme: 'dark',
   defaultShell: '',
   terminal: DEFAULT_TERMINAL,
+  language: 'ko',
 }
 
 function getConfigPath(): string {

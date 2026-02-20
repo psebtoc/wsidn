@@ -1,4 +1,5 @@
 import type { Project } from '@renderer/types/project'
+import { useTranslation } from 'react-i18next'
 import { useProjectStore } from '@renderer/stores/project-store'
 import Tooltip from '@renderer/components/ui/Tooltip'
 
@@ -8,6 +9,7 @@ interface ProjectListProps {
 }
 
 export default function ProjectList({ projects, onSelect }: ProjectListProps) {
+  const { t } = useTranslation()
   const deleteProject = useProjectStore((s) => s.deleteProject)
 
   const handleDelete = async (e: React.MouseEvent, projectId: string) => {
@@ -18,8 +20,8 @@ export default function ProjectList({ projects, onSelect }: ProjectListProps) {
   if (projects.length === 0) {
     return (
       <div className="text-center py-12 text-neutral-500">
-        <p className="text-sm">No projects yet.</p>
-        <p className="text-sm mt-1">Create one to get started.</p>
+        <p className="text-sm">{t('startup.noProjects')}</p>
+        <p className="text-sm mt-1">{t('startup.createToStart')}</p>
       </div>
     )
   }
@@ -41,7 +43,7 @@ export default function ProjectList({ projects, onSelect }: ProjectListProps) {
                 {project.path}
               </div>
             </div>
-            <Tooltip content="Delete project" side="left">
+            <Tooltip content={t('startup.deleteProject')} side="left">
               <button
                 onClick={(e) => handleDelete(e, project.id)}
                 className="ml-3 p-1 text-neutral-600 hover:text-red-400 opacity-0 group-hover:opacity-100

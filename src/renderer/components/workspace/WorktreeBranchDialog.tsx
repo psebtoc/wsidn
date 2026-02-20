@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { createPortal } from 'react-dom'
 
 interface WorktreeBranchDialogProps {
@@ -7,6 +8,7 @@ interface WorktreeBranchDialogProps {
 }
 
 export default function WorktreeBranchDialog({ onConfirm, onCancel }: WorktreeBranchDialogProps) {
+  const { t } = useTranslation()
   const [value, setValue] = useState('')
   const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -26,15 +28,15 @@ export default function WorktreeBranchDialog({ onConfirm, onCancel }: WorktreeBr
   const handleSubmit = () => {
     const trimmed = value.trim()
     if (!trimmed) {
-      setError('Branch name is required')
+      setError(t('worktreeDialog.branchRequired'))
       return
     }
     if (/\s/.test(trimmed)) {
-      setError('Branch name cannot contain spaces')
+      setError(t('worktreeDialog.noSpaces'))
       return
     }
     if (/[~^:?*\[\\]/.test(trimmed)) {
-      setError('Branch name contains invalid characters')
+      setError(t('worktreeDialog.invalidChars'))
       return
     }
     onConfirm(trimmed)
@@ -49,7 +51,7 @@ export default function WorktreeBranchDialog({ onConfirm, onCancel }: WorktreeBr
         className="bg-neutral-800 border border-neutral-700 rounded-lg shadow-xl p-4 w-[340px]"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="text-sm font-medium text-neutral-200 mb-3">Worktree Branch Name</h3>
+        <h3 className="text-sm font-medium text-neutral-200 mb-3">{t('worktreeDialog.title')}</h3>
         <input
           ref={inputRef}
           type="text"
@@ -67,14 +69,14 @@ export default function WorktreeBranchDialog({ onConfirm, onCancel }: WorktreeBr
             className="px-3 py-1.5 text-xs text-neutral-300 bg-neutral-700 hover:bg-neutral-600
                        rounded transition-colors"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             onClick={handleSubmit}
             className="px-3 py-1.5 text-xs text-white bg-blue-600 hover:bg-blue-500
                        rounded transition-colors"
           >
-            Create
+            {t('common.create')}
           </button>
         </div>
       </div>

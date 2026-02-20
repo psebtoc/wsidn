@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { AppConfig } from '@renderer/types/project'
 import { unwrapIpc } from '@renderer/types/ipc'
+import i18n from '@renderer/i18n'
 
 const DEFAULT_CONFIG: AppConfig = {
   theme: 'dark',
@@ -14,6 +15,7 @@ const DEFAULT_CONFIG: AppConfig = {
     background: '#1a1a1a',
     foreground: '#e0e0e0',
   },
+  language: 'ko',
 }
 
 interface ConfigState {
@@ -31,14 +33,15 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
     try {
       const config = unwrapIpc(await window.wsidn.config.get())
       // Merge with defaults to fill missing fields from older config files
-      set({
-        config: {
-          ...DEFAULT_CONFIG,
-          ...config,
-          terminal: { ...DEFAULT_CONFIG.terminal, ...config.terminal },
-        },
-        loaded: true,
-      })
+      const merged = {
+        ...DEFAULT_CONFIG,
+        ...config,
+        terminal: { ...DEFAULT_CONFIG.terminal, ...config.terminal },
+      }
+      set({ config: merged, loaded: true })
+      if (merged.language && merged.language !== i18n.language) {
+        i18n.changeLanguage(merged.language)
+      }
     } catch {
       set({ loaded: true })
     }
@@ -52,5 +55,8 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
       await unwrapIpc(await window.wsidn.config.set(key, patch[key]))
     }
     set({ config: next })
+    if (patch.language && patch.language !== i18n.language) {
+      i18n.changeLanguage(patch.language)
+    }
   },
 }))

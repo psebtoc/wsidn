@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useTemplateStore } from '@renderer/stores/template-store'
 import type { PromptTemplate } from '@renderer/types/project'
 import TemplateEditor from './TemplateEditor'
@@ -9,6 +10,7 @@ interface TemplatePanelProps {
 }
 
 export default function TemplatePanel({ projectId, onInsert }: TemplatePanelProps) {
+  const { t } = useTranslation()
   const templates = useTemplateStore((s) => s.templates)
   const loadTemplates = useTemplateStore((s) => s.loadTemplates)
   const removeTemplate = useTemplateStore((s) => s.removeTemplate)
@@ -44,33 +46,33 @@ export default function TemplatePanel({ projectId, onInsert }: TemplatePanelProp
     setCreating(false)
   }
 
-  const renderTemplateItem = (t: PromptTemplate) => {
-    const firstLine = t.content.split('\n')[0]?.slice(0, 80) || ''
+  const renderTemplateItem = (tmpl: PromptTemplate) => {
+    const firstLine = tmpl.content.split('\n')[0]?.slice(0, 80) || ''
 
     return (
       <div
-        key={t.id}
-        onClick={() => onInsert?.(t.content)}
+        key={tmpl.id}
+        onClick={() => onInsert?.(tmpl.content)}
         className={`flex items-start justify-between gap-2 px-2 py-1.5 rounded hover:bg-neutral-800/50 group ${
           onInsert ? 'cursor-pointer' : ''
         }`}
       >
         <div className="flex-1 min-w-0">
-          <p className="text-xs text-white truncate">{t.title}</p>
+          <p className="text-xs text-white truncate">{tmpl.title}</p>
           <p className="text-[10px] text-neutral-500 truncate">{firstLine}</p>
         </div>
         <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
           <button
-            onClick={() => setEditing(t.id)}
+            onClick={() => setEditing(tmpl.id)}
             className="px-1.5 py-0.5 text-[10px] text-neutral-400 hover:text-white hover:bg-neutral-700 rounded transition-colors"
           >
-            Edit
+            {t('common.edit')}
           </button>
           <button
-            onClick={() => handleDelete(t.id)}
+            onClick={() => handleDelete(tmpl.id)}
             className="px-1.5 py-0.5 text-[10px] text-neutral-400 hover:text-red-400 hover:bg-neutral-700 rounded transition-colors"
           >
-            Del
+            {t('template.del')}
           </button>
         </div>
       </div>
@@ -83,7 +85,7 @@ export default function TemplatePanel({ projectId, onInsert }: TemplatePanelProp
         {label}
       </h3>
       {items.length === 0 ? (
-        <p className="text-[10px] text-neutral-600 px-2 py-2">No templates</p>
+        <p className="text-[10px] text-neutral-600 px-2 py-2">{t('template.noTemplates')}</p>
       ) : (
         items.map(renderTemplateItem)
       )}
@@ -95,7 +97,7 @@ export default function TemplatePanel({ projectId, onInsert }: TemplatePanelProp
       {/* Header */}
       <div className="px-3 py-3 border-b border-neutral-800 flex items-center justify-between">
         <span className="text-xs font-medium text-neutral-300 uppercase tracking-wider">
-          Templates
+          {t('template.title')}
         </span>
         <button
           onClick={() => setCreating(true)}
@@ -119,8 +121,8 @@ export default function TemplatePanel({ projectId, onInsert }: TemplatePanelProp
           />
         ) : (
           <>
-            {renderSection('Global', globalTemplates)}
-            {renderSection('Project', projectTemplates)}
+            {renderSection(t('template.global'), globalTemplates)}
+            {renderSection(t('template.project'), projectTemplates)}
           </>
         )}
       </div>

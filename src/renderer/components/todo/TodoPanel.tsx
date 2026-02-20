@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useTodoStore } from '@renderer/stores/todo-store'
 import TodoItem from './TodoItem'
 import TodoCreateInput from './TodoCreateInput'
@@ -9,6 +10,7 @@ interface TodoPanelProps {
 }
 
 export default function TodoPanel({ sessionId }: TodoPanelProps) {
+  const { t } = useTranslation()
   const todos = useTodoStore((s) => s.todos)
   const loading = useTodoStore((s) => s.loading)
   const loadTodos = useTodoStore((s) => s.loadTodos)
@@ -25,9 +27,9 @@ export default function TodoPanel({ sessionId }: TodoPanelProps) {
       {/* Header */}
       <div className="px-3 py-3 border-b border-neutral-800 flex items-center justify-between">
         <span className="text-xs font-medium text-neutral-300 uppercase tracking-wider">
-          TODO
+          {t('todo.title')}
         </span>
-        <Tooltip content="Add todo" side="left">
+        <Tooltip content={t('todo.addTodo')} side="left">
           <button
             onClick={() => setShowCreate(true)}
             className="w-5 h-5 flex items-center justify-center rounded text-neutral-400
@@ -43,9 +45,9 @@ export default function TodoPanel({ sessionId }: TodoPanelProps) {
       {/* Todo list */}
       <div className="flex-1 overflow-y-auto px-1 py-2">
         {loading ? (
-          <p className="text-xs text-neutral-500 text-center py-4">Loading...</p>
+          <p className="text-xs text-neutral-500 text-center py-4">{t('common.loading')}</p>
         ) : rootTodos.length === 0 && !showCreate ? (
-          <p className="text-xs text-neutral-500 text-center py-4">No todos yet</p>
+          <p className="text-xs text-neutral-500 text-center py-4">{t('todo.noTodos')}</p>
         ) : (
           rootTodos.map((todo) => (
             <TodoItem key={todo.id} todo={todo} depth={0} />

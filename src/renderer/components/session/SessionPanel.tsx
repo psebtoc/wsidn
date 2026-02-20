@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { Session, Pane, ClaudeActivity } from '@renderer/types/project'
 import { sessionService } from '@renderer/services/session-service'
 import { useSessionStore } from '@renderer/stores/session-store'
@@ -16,6 +17,7 @@ export default function SessionPanel({
   projectId,
   onFocusSession,
 }: SessionPanelProps) {
+  const { t } = useTranslation()
   const claudeActivities = useSessionStore((s) => s.claudeActivities)
   const otherProjectSessions = useSessionStore((s) => s.otherProjectSessions)
   const renamePane = useSessionStore((s) => s.renamePane)
@@ -54,17 +56,17 @@ export default function SessionPanel({
       {/* Header */}
       <div className="px-3 py-3 border-b border-neutral-800 flex items-center justify-between">
         <span className="text-xs font-medium text-neutral-300 uppercase tracking-wider">
-          Sessions
+          {t('session.title')}
         </span>
         <span className="text-[10px] text-neutral-500">
-          {totalActive} active
+          {t('session.activeCount', { count: totalActive })}
         </span>
       </div>
 
       {/* Body */}
       <div className="flex-1 overflow-y-auto px-1 py-2 space-y-1">
         {panes.length === 0 && otherProjectSessions.length === 0 ? (
-          <p className="text-[10px] text-neutral-600 px-2 py-2">No active sessions</p>
+          <p className="text-[10px] text-neutral-600 px-2 py-2">{t('session.noActiveSessions')}</p>
         ) : (
           <>
             {/* Current project panes */}
@@ -111,7 +113,7 @@ export default function SessionPanel({
               <>
                 <div className="border-t border-neutral-800 mx-2 my-2" />
                 <p className="text-[10px] font-medium text-neutral-600 uppercase tracking-wider px-2 mb-1">
-                  Other Projects
+                  {t('session.otherProjects')}
                 </p>
                 {otherProjectSessions.map((ps) => {
                   const groupKey = `project-${ps.project.id}`

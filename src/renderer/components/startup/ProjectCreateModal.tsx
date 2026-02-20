@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useProjectStore } from '@renderer/stores/project-store'
 import { projectService } from '@renderer/services/project-service'
 
@@ -8,6 +9,7 @@ interface ProjectCreateModalProps {
 }
 
 export default function ProjectCreateModal({ open, onClose }: ProjectCreateModalProps) {
+  const { t } = useTranslation()
   const [name, setName] = useState('')
   const [path, setPath] = useState('')
   const [error, setError] = useState('')
@@ -28,17 +30,17 @@ export default function ProjectCreateModal({ open, onClose }: ProjectCreateModal
         }
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to select directory')
+      setError(e instanceof Error ? e.message : t('projectCreate.failedSelectDir'))
     }
   }
 
   const handleCreate = async () => {
     if (!name.trim()) {
-      setError('Project name is required')
+      setError(t('projectCreate.nameRequired'))
       return
     }
     if (!path.trim()) {
-      setError('Project path is required')
+      setError(t('projectCreate.pathRequired'))
       return
     }
 
@@ -51,7 +53,7 @@ export default function ProjectCreateModal({ open, onClose }: ProjectCreateModal
       setPath('')
       onClose()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to create project')
+      setError(e instanceof Error ? e.message : t('projectCreate.failedCreate'))
     } finally {
       setCreating(false)
     }
@@ -72,11 +74,11 @@ export default function ProjectCreateModal({ open, onClose }: ProjectCreateModal
         className="bg-neutral-800 rounded-lg border border-neutral-700 p-6 w-[480px] shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-semibold text-white mb-4">New Project</h2>
+        <h2 className="text-lg font-semibold text-white mb-4">{t('projectCreate.title')}</h2>
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm text-neutral-400 mb-1">Project Name</label>
+            <label className="block text-sm text-neutral-400 mb-1">{t('projectCreate.nameLabel')}</label>
             <input
               type="text"
               value={name}
@@ -89,13 +91,13 @@ export default function ProjectCreateModal({ open, onClose }: ProjectCreateModal
           </div>
 
           <div>
-            <label className="block text-sm text-neutral-400 mb-1">Directory</label>
+            <label className="block text-sm text-neutral-400 mb-1">{t('projectCreate.directoryLabel')}</label>
             <div className="flex gap-2">
               <input
                 type="text"
                 value={path}
                 onChange={(e) => setPath(e.target.value)}
-                placeholder="Select a folder..."
+                placeholder={t('projectCreate.selectFolder')}
                 readOnly
                 className="flex-1 px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white text-sm
                            placeholder:text-neutral-500 cursor-pointer focus:outline-none focus:border-blue-500"
@@ -106,7 +108,7 @@ export default function ProjectCreateModal({ open, onClose }: ProjectCreateModal
                 className="px-3 py-2 bg-neutral-700 hover:bg-neutral-600 rounded text-sm text-white
                            transition-colors"
               >
-                Browse
+                {t('common.browse')}
               </button>
             </div>
           </div>
@@ -121,7 +123,7 @@ export default function ProjectCreateModal({ open, onClose }: ProjectCreateModal
             onClick={onClose}
             className="px-4 py-2 text-sm text-neutral-400 hover:text-white transition-colors"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             onClick={handleCreate}
@@ -129,7 +131,7 @@ export default function ProjectCreateModal({ open, onClose }: ProjectCreateModal
             className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-neutral-600 disabled:text-neutral-400
                        rounded text-sm text-white font-medium transition-colors"
           >
-            {creating ? 'Creating...' : 'Create'}
+            {creating ? t('common.creating') : t('common.create')}
           </button>
         </div>
       </div>
