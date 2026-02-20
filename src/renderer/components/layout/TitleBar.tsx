@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useProjectStore } from '@renderer/stores/project-store'
 import WindowControls from './WindowControls'
+import AppSettingsModal from '@renderer/components/settings/AppSettingsModal'
 
 export default function TitleBar() {
   const projects = useProjectStore((s) => s.projects)
@@ -11,6 +12,7 @@ export default function TitleBar() {
   const activeProject = projects.find((p) => p.id === activeProjectId)
 
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -104,9 +106,12 @@ export default function TitleBar() {
 
       <div className="flex-1" />
 
-      {/* Settings placeholder */}
+      {/* Settings */}
       <div style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-        <button className="flex items-center justify-center w-8 h-full text-neutral-500 hover:text-neutral-300 transition-colors">
+        <button
+          onClick={() => setSettingsOpen(true)}
+          className="flex items-center justify-center w-8 h-full text-neutral-500 hover:text-neutral-300 transition-colors"
+        >
           <svg
             width="14"
             height="14"
@@ -122,6 +127,8 @@ export default function TitleBar() {
       </div>
 
       <WindowControls />
+
+      <AppSettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   )
 }

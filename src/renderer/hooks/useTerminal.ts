@@ -5,6 +5,7 @@ import { WebLinksAddon } from '@xterm/addon-web-links'
 import '@xterm/xterm/css/xterm.css'
 import { parseClaudeTitle } from '@renderer/utils/claude-activity'
 import { useSessionStore } from '@renderer/stores/session-store'
+import { useConfigStore } from '@renderer/stores/config-store'
 import { sessionService } from '@renderer/services/session-service'
 
 export function useTerminal(
@@ -12,19 +13,38 @@ export function useTerminal(
   containerRef: React.RefObject<HTMLDivElement>
 ) {
   const termRef = useRef<Terminal | null>(null)
+  const terminalConfig = useConfigStore((s) => s.config.terminal)
+
+  // Apply config changes to existing terminal
+  useEffect(() => {
+    const term = termRef.current
+    if (!term) return
+    term.options.fontSize = terminalConfig.fontSize
+    term.options.fontFamily = terminalConfig.fontFamily
+    term.options.cursorStyle = terminalConfig.cursorStyle
+    term.options.cursorBlink = terminalConfig.cursorBlink
+    term.options.scrollback = terminalConfig.scrollback
+    term.options.theme = {
+      background: terminalConfig.background,
+      foreground: terminalConfig.foreground,
+    }
+  }, [terminalConfig])
 
   useEffect(() => {
     if (!containerRef.current || !sessionId) return
 
+    const tc = useConfigStore.getState().config.terminal
+
     const terminal = new Terminal({
-      cursorBlink: true,
-      fontSize: 14,
-      fontFamily: 'Consolas, monospace',
+      cursorBlink: tc.cursorBlink,
+      fontSize: tc.fontSize,
+      fontFamily: tc.fontFamily,
+      cursorStyle: tc.cursorStyle,
       theme: {
-        background: '#1a1a1a',
-        foreground: '#e0e0e0'
+        background: tc.background,
+        foreground: tc.foreground,
       },
-      scrollback: 5000
+      scrollback: tc.scrollback,
     })
 
     const fitAddon = new FitAddon()

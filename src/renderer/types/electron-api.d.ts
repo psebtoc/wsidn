@@ -19,6 +19,7 @@ export interface WsidnAPI {
     create: (name: string, path: string) => Promise<IpcResult<Project>>
     list: () => Promise<IpcResult<Project[]>>
     delete: (projectId: string) => Promise<IpcResult<boolean>>
+    update: (projectId: string, data: Record<string, unknown>) => Promise<IpcResult<Project>>
     selectDir: () => Promise<IpcResult<string | null>>
   }
   session: {

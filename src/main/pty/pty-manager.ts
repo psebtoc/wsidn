@@ -1,6 +1,7 @@
 import * as pty from 'node-pty'
 import type { IPty } from 'node-pty'
 import { BrowserWindow } from 'electron'
+import { readJson, getAppDataPath } from '@main/storage/storage-manager'
 
 class PtyManager {
   private registry = new Map<string, IPty>()
@@ -10,13 +11,21 @@ class PtyManager {
     this.mainWindow = mainWindow
   }
 
+  private getShell(): string {
+    try {
+      const config = readJson<{ defaultShell?: string }>(getAppDataPath('config.json'), {})
+      if (config.defaultShell) return config.defaultShell
+    } catch { /* use fallback */ }
+    return process.env.COMSPEC || 'cmd.exe'
+  }
+
   spawn(sessionId: string, cwd: string): void {
     if (this.registry.has(sessionId)) {
       console.warn(`[PtyManager] Session already exists: ${sessionId}`)
       return
     }
 
-    const shell = process.env.COMSPEC || 'cmd.exe'
+    const shell = this.getShell()
 
     const ptyProcess = pty.spawn(shell, [], {
       name: 'xterm-256color',

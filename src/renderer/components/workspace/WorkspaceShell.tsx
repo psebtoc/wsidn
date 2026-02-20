@@ -7,6 +7,7 @@ import PaneStatusBar from './PaneStatusBar'
 import ActivityRibbon, { PANELS, type PanelId } from './ActivityRibbon'
 import SessionPanel from '@renderer/components/session/SessionPanel'
 import TemplatePanel from '@renderer/components/template/TemplatePanel'
+import ProjectSettingsPanel from '@renderer/components/settings/ProjectSettingsPanel'
 import { calculateBounds, collectDividers } from '@renderer/utils/split-utils'
 import type { SplitDirection } from '@renderer/types/project'
 import type { PaneBounds } from '@renderer/utils/split-utils'
@@ -208,6 +209,9 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
             if (activeSessionId) sessionService.terminalInput(activeSessionId, content)
           }}
         />
+      )}
+      {activePanel === 'projectSettings' && (
+        <ProjectSettingsPanel projectId={projectId} />
       )}
 
       {/* Main area (relative for overlay positioning) */}

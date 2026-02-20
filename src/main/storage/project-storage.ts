@@ -82,3 +82,15 @@ export function getProject(projectId: string): Project | null {
   if (!existsSync(projectFile)) return null
   return readJson<Project | null>(projectFile, null)
 }
+
+/**
+ * Updates a project's fields and writes back to disk.
+ */
+export function updateProject(projectId: string, data: Record<string, unknown>): Project {
+  const project = getProject(projectId)
+  if (!project) throw new Error(`Project not found: ${projectId}`)
+  const updated = { ...project, ...data, id: project.id, createdAt: project.createdAt }
+  const projectFile = join(getProjectsDir(), projectId, 'project.json')
+  writeJson(projectFile, updated)
+  return updated
+}

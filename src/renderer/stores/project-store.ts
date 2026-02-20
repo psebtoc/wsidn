@@ -10,6 +10,7 @@ interface ProjectState {
   loadProjects: () => Promise<void>
   createProject: (name: string, path: string) => Promise<Project>
   deleteProject: (projectId: string) => Promise<void>
+  updateProject: (projectId: string, data: Record<string, unknown>) => Promise<void>
   setActiveProject: (projectId: string) => void
   clearActiveProject: () => void
 }
@@ -36,6 +37,13 @@ export const useProjectStore = create<ProjectState>((set) => ({
     set((s) => ({
       projects: s.projects.filter((p) => p.id !== projectId),
       activeProjectId: s.activeProjectId === projectId ? null : s.activeProjectId,
+    }))
+  },
+
+  updateProject: async (projectId, data) => {
+    const updated = await projectService.update(projectId, data)
+    set((s) => ({
+      projects: s.projects.map((p) => (p.id === projectId ? updated : p)),
     }))
   },
 

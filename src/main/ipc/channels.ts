@@ -20,6 +20,7 @@ export const IPC_CHANNELS = {
   PROJECT_CREATE: 'project:create',
   PROJECT_LIST: 'project:list',
   PROJECT_DELETE: 'project:delete',
+  PROJECT_UPDATE: 'project:update',
   PROJECT_SELECT_DIR: 'project:selectDir',
 
   // Config

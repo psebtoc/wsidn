@@ -6,6 +6,8 @@ contextBridge.exposeInMainWorld('wsidn', {
     create: (name: string, path: string) => ipcRenderer.invoke('project:create', { name, path }),
     list: () => ipcRenderer.invoke('project:list'),
     delete: (projectId: string) => ipcRenderer.invoke('project:delete', { projectId }),
+    update: (projectId: string, data: Record<string, unknown>) =>
+      ipcRenderer.invoke('project:update', { projectId, data }),
     selectDir: () => ipcRenderer.invoke('project:selectDir')
   },
 

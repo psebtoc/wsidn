@@ -1,6 +1,6 @@
 import Tooltip from '@renderer/components/ui/Tooltip'
 
-export type PanelId = 'session' | 'template'
+export type PanelId = 'session' | 'template' | 'projectSettings'
 export type PanelMode = 'overlay' | 'persistent'
 
 export interface PanelDef {
@@ -61,6 +61,26 @@ export default function ActivityRibbon({ activePanel, onTogglePanel }: ActivityR
           </button>
         </Tooltip>
       ))}
+
+      {/* Spacer */}
+      <div className="flex-1" />
+
+      {/* Project Settings */}
+      <Tooltip content="Project Settings" side="right">
+        <button
+          onClick={() => onTogglePanel('projectSettings')}
+          className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${
+            activePanel === 'projectSettings'
+              ? 'bg-neutral-700 text-white'
+              : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800'
+          }`}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+          </svg>
+        </button>
+      </Tooltip>
     </div>
   )
 }

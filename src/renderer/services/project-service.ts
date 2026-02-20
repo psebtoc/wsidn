@@ -10,6 +10,9 @@ export const projectService = {
   async delete(projectId: string) {
     return unwrapIpc(await window.wsidn.project.delete(projectId))
   },
+  async update(projectId: string, data: Record<string, unknown>) {
+    return unwrapIpc(await window.wsidn.project.update(projectId, data))
+  },
   async selectDir() {
     return unwrapIpc(await window.wsidn.project.selectDir())
   },

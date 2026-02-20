@@ -38,9 +38,20 @@ export interface ProjectSessions {
   sessions: Session[]
 }
 
+export interface TerminalConfig {
+  fontSize: number
+  fontFamily: string
+  cursorStyle: 'block' | 'underline' | 'bar'
+  cursorBlink: boolean
+  scrollback: number
+  background: string
+  foreground: string
+}
+
 export interface AppConfig {
   theme: 'dark' | 'light'
   defaultShell: string
+  terminal: TerminalConfig
 }
 
 // --- Phase 2: TODO ---

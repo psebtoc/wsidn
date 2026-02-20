@@ -1,16 +1,38 @@
 import { ipcMain, dialog } from 'electron'
 import { IPC_CHANNELS } from '@main/ipc/channels'
-import { createProject, listProjects, deleteProject } from './project-storage'
+import { createProject, listProjects, deleteProject, getProject, updateProject } from './project-storage'
 import { getAppDataPath, readJson, writeJson } from './storage-manager'
+
+interface TerminalConfig {
+  fontSize: number
+  fontFamily: string
+  cursorStyle: 'block' | 'underline' | 'bar'
+  cursorBlink: boolean
+  scrollback: number
+  background: string
+  foreground: string
+}
 
 interface AppConfig {
   theme: 'dark' | 'light'
   defaultShell: string
+  terminal: TerminalConfig
+}
+
+const DEFAULT_TERMINAL: TerminalConfig = {
+  fontSize: 14,
+  fontFamily: 'Consolas, monospace',
+  cursorStyle: 'block',
+  cursorBlink: true,
+  scrollback: 5000,
+  background: '#1a1a1a',
+  foreground: '#e0e0e0',
 }
 
 const DEFAULT_CONFIG: AppConfig = {
   theme: 'dark',
   defaultShell: '',
+  terminal: DEFAULT_TERMINAL,
 }
 
 function getConfigPath(): string {
@@ -47,6 +69,18 @@ export function registerStorageIpc(): void {
     }
   })
 
+  ipcMain.handle(
+    IPC_CHANNELS.PROJECT_UPDATE,
+    (_event, { projectId, data }: { projectId: string; data: Record<string, unknown> }) => {
+      try {
+        const project = updateProject(projectId, data)
+        return { success: true, data: project }
+      } catch (err) {
+        return { success: false, error: String(err) }
+      }
+    }
+  )
+
   ipcMain.handle(IPC_CHANNELS.PROJECT_SELECT_DIR, async () => {
     try {
       const result = await dialog.showOpenDialog({
@@ -65,7 +99,12 @@ export function registerStorageIpc(): void {
 
   ipcMain.handle(IPC_CHANNELS.CONFIG_GET, () => {
     try {
-      const config = readJson<AppConfig>(getConfigPath(), DEFAULT_CONFIG)
+      const raw = readJson<Partial<AppConfig>>(getConfigPath(), {})
+      const config: AppConfig = {
+        ...DEFAULT_CONFIG,
+        ...raw,
+        terminal: { ...DEFAULT_TERMINAL, ...raw.terminal },
+      }
       return { success: true, data: config }
     } catch (err) {
       return { success: false, error: String(err) }
