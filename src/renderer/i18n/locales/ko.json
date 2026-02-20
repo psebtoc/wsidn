@@ -74,6 +74,12 @@
 
   "contextMenu.worktree": "Worktree 분화",
   "contextMenu.resume": "Resume",
+  "contextMenu.searchResume": "검색...",
+  "contextMenu.noResults": "결과 없음",
+  "contextMenu.timeJustNow": "방금",
+  "contextMenu.timeMinAgo": "{{count}}분 전",
+  "contextMenu.timeHourAgo": "{{count}}시간 전",
+  "contextMenu.timeDayAgo": "{{count}}일 전",
 
   "worktreeDialog.title": "Worktree 브랜치 이름",
   "worktreeDialog.branchRequired": "브랜치 이름이 필요합니다",

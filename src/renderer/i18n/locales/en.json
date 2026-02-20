@@ -74,6 +74,12 @@
 
   "contextMenu.worktree": "Worktree Branch",
   "contextMenu.resume": "Resume",
+  "contextMenu.searchResume": "Search...",
+  "contextMenu.noResults": "No results",
+  "contextMenu.timeJustNow": "just now",
+  "contextMenu.timeMinAgo": "{{count}}m ago",
+  "contextMenu.timeHourAgo": "{{count}}h ago",
+  "contextMenu.timeDayAgo": "{{count}}d ago",
 
   "worktreeDialog.title": "Worktree Branch Name",
   "worktreeDialog.branchRequired": "Branch name is required",

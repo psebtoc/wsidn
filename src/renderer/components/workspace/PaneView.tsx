@@ -619,11 +619,14 @@ export default function PaneView({
           onSelectClaude={() => onCreateSessionWithCommand?.('claude\n')}
           onSelectClaudeDangerously={() => onCreateSessionWithCommand?.('claude --dangerously-skip-permissions\n')}
           onSelectWorktree={() => setShowWorktreeDialog(true)}
-          resumableSessions={resumeHistory.map((entry) => ({
+          resumableSessions={[...resumeHistory]
+            .sort((a, b) => new Date(b.closedAt).getTime() - new Date(a.closedAt).getTime())
+            .map((entry) => ({
               id: entry.claudeSessionId,
               claudeSessionId: entry.claudeSessionId,
               claudeLastTitle: entry.claudeLastTitle,
               name: entry.sessionName,
+              closedAt: entry.closedAt,
             }))}
           onResume={(claudeSessionId) =>
             onCreateSessionWithCommand?.(`claude --resume ${claudeSessionId}\n`)

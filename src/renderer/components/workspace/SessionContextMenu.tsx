@@ -1,12 +1,14 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { createPortal } from 'react-dom'
+import { Search } from 'lucide-react'
 
 interface ResumableSession {
   id: string
   claudeSessionId: string
   claudeLastTitle: string | null
   name: string
+  closedAt: string
 }
 
 interface SessionContextMenuProps {
@@ -29,12 +31,35 @@ export default function SessionContextMenu({
   onResume
 }: SessionContextMenuProps) {
   const { t } = useTranslation()
+
+  const formatClosedAt = useCallback((iso: string): string => {
+    const d = new Date(iso)
+    const now = new Date()
+    const diffMs = now.getTime() - d.getTime()
+    const diffMin = Math.floor(diffMs / 60000)
+    const diffHour = Math.floor(diffMs / 3600000)
+    const diffDay = Math.floor(diffMs / 86400000)
+
+    if (diffMin < 1) return t('contextMenu.timeJustNow')
+    if (diffMin < 60) return t('contextMenu.timeMinAgo', { count: diffMin })
+    if (diffHour < 24) return t('contextMenu.timeHourAgo', { count: diffHour })
+    if (diffDay < 7) return t('contextMenu.timeDayAgo', { count: diffDay })
+
+    const month = d.getMonth() + 1
+    const day = d.getDate()
+    const hours = d.getHours().toString().padStart(2, '0')
+    const mins = d.getMinutes().toString().padStart(2, '0')
+    return `${month}/${day} ${hours}:${mins}`
+  }, [t])
+
   const [showResume, setShowResume] = useState(false)
   const [submenuFlipX, setSubmenuFlipX] = useState(false)
   const [flipY, setFlipY] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const menuRef = useRef<HTMLDivElement>(null)
   const resumeTimerRef = useRef<ReturnType<typeof setTimeout>>()
   const submenuRef = useRef<HTMLDivElement>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
 
   // Position: below the anchor, flip if overflows
   const [pos, setPos] = useState({ top: 0, left: 0 })
@@ -88,6 +113,14 @@ export default function SessionContextMenu({
     }
   }, [showResume])
 
+  // Focus search input when submenu opens
+  useEffect(() => {
+    if (showResume) {
+      setSearchQuery('')
+      requestAnimationFrame(() => searchInputRef.current?.focus())
+    }
+  }, [showResume])
+
   const handleResumeEnter = useCallback(() => {
     clearTimeout(resumeTimerRef.current)
     if (resumableSessions.length > 0) {
@@ -112,6 +145,17 @@ export default function SessionContextMenu({
   useEffect(() => {
     return () => clearTimeout(resumeTimerRef.current)
   }, [])
+
+  const filteredSessions = useMemo(() => {
+    if (!searchQuery.trim()) return resumableSessions
+    const q = searchQuery.toLowerCase()
+    return resumableSessions.filter(
+      (s) =>
+        s.name.toLowerCase().includes(q) ||
+        (s.claudeLastTitle && s.claudeLastTitle.toLowerCase().includes(q)) ||
+        s.claudeSessionId.toLowerCase().includes(q)
+    )
+  }, [resumableSessions, searchQuery])
 
   const hasResumable = resumableSessions.length > 0
 
@@ -169,7 +213,7 @@ export default function SessionContextMenu({
               ref={submenuRef}
               onMouseEnter={handleSubmenuEnter}
               onMouseLeave={handleSubmenuLeave}
-              className="fixed z-[10000] min-w-[200px] max-w-[300px] max-h-[300px] overflow-y-auto py-1 bg-neutral-800 border border-neutral-700 rounded-md shadow-xl shadow-black/50"
+              className="fixed z-[10000] min-w-[240px] max-w-[340px] max-h-[360px] flex flex-col bg-neutral-800 border border-neutral-700 rounded-md shadow-xl shadow-black/50"
               style={{
                 top: (() => {
                   const el = menuRef.current?.querySelector('[data-resume-trigger]')
@@ -181,23 +225,52 @@ export default function SessionContextMenu({
                 })(),
                 left: submenuFlipX
                   ? (menuRef.current?.getBoundingClientRect().right ?? pos.left + 220)
-                  : (menuRef.current?.getBoundingClientRect().left ?? pos.left) - 200,
+                  : (menuRef.current?.getBoundingClientRect().left ?? pos.left) - 240,
               }}
             >
-              {resumableSessions.map((s) => (
-                <button
-                  key={s.claudeSessionId}
-                  className="w-full text-left px-3 py-1.5 hover:bg-neutral-700/60 transition-colors rounded-sm"
-                  onClick={() => { onResume(s.claudeSessionId); onClose() }}
-                >
-                  <span className="block text-xs text-neutral-200 truncate">{s.name}</span>
-                  {s.claudeLastTitle && (
-                    <span className="block text-[10px] text-neutral-500 truncate mt-0.5">
-                      {s.claudeLastTitle}
-                    </span>
-                  )}
-                </button>
-              ))}
+              {/* Search field */}
+              <div className="px-2 pt-2 pb-1 shrink-0">
+                <div className="flex items-center gap-1.5 px-2 py-1 bg-neutral-900 border border-neutral-600 rounded text-xs">
+                  <Search size={11} className="text-neutral-500 shrink-0" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder={t('contextMenu.searchResume', 'Search...')}
+                    className="flex-1 bg-transparent text-neutral-200 placeholder-neutral-500 outline-none min-w-0"
+                  />
+                </div>
+              </div>
+
+              {/* Session list */}
+              <div className="overflow-y-auto py-1 min-h-0">
+                {filteredSessions.length === 0 ? (
+                  <div className="px-3 py-2 text-[10px] text-neutral-500 text-center">
+                    {t('contextMenu.noResults', 'No results')}
+                  </div>
+                ) : (
+                  filteredSessions.map((s) => (
+                    <button
+                      key={s.claudeSessionId}
+                      className="w-full text-left px-3 py-1.5 hover:bg-neutral-700/60 transition-colors rounded-sm"
+                      onClick={() => { onResume(s.claudeSessionId); onClose() }}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs text-neutral-200 truncate">{s.name}</span>
+                        <span className="text-[10px] text-neutral-500 shrink-0 tabular-nums">
+                          {formatClosedAt(s.closedAt)}
+                        </span>
+                      </div>
+                      {s.claudeLastTitle && (
+                        <span className="block text-[10px] text-neutral-500 truncate mt-0.5">
+                          {s.claudeLastTitle}
+                        </span>
+                      )}
+                    </button>
+                  ))
+                )}
+              </div>
             </div>
           )}
         </div>
