@@ -174,11 +174,19 @@ function ensureHookEntry(
 
   const entries = hooks[eventName] as HookEntry[]
 
-  const alreadyRegistered = entries.some((entry) =>
+  // Already registered with the correct command — nothing to do
+  if (entries.some((entry) => entry.hooks?.some((h) => h.command === command))) return false
+
+  // Registered with a stale path (same filename, different path) — update in place
+  const staleEntry = entries.find((entry) =>
     entry.hooks?.some((h) => h.command.includes(HOOK_FILENAME))
   )
-
-  if (alreadyRegistered) return false
+  if (staleEntry) {
+    staleEntry.hooks = staleEntry.hooks!.map((h) =>
+      h.command.includes(HOOK_FILENAME) ? { ...h, command } : h
+    )
+    return true
+  }
 
   entries.push({
     matcher: '',
