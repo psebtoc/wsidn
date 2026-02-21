@@ -101,6 +101,7 @@
   "todo.addChecklist": "Add checklist",
   "todo.newChecklistItem": "Completion criteria...",
 
+  "mindtree.title": "Mind Tree",
   "mindtree.task": "Task",
   "mindtree.decision": "Decision",
   "mindtree.note": "Note",
@@ -109,6 +110,9 @@
   "mindtree.newTask": "New task...",
   "mindtree.newDecision": "New decision...",
   "mindtree.newNote": "New note...",
+  "mindtree.smEnable": "Enable Session Manager",
+  "mindtree.smDisable": "Disable Session Manager",
+  "mindtree.selectModel": "Select model",
 
   "template.title": "Templates",
   "template.global": "Global",

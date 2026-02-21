@@ -5,6 +5,8 @@ import { ptyManager } from './pty/pty-manager'
 import { registerAllIpc } from './ipc'
 import { hookServer } from './hook-server/hook-server'
 import { setupHookScript, setupClaudeSettings } from './hook-server/hook-setup'
+import { sessionManager } from './session-manager/session-manager'
+import { setupSessionManagerPrompt } from './session-manager/session-manager-setup'
 import { readJson, writeJson, getAppDataPath } from './storage/storage-manager'
 
 // Set userData path before app ready
@@ -99,9 +101,11 @@ app.whenReady().then(() => {
 
   hookServer.init(mainWindow)
   hookServer.start().catch((err) => console.error('[HookServer] start failed:', err))
+  sessionManager.init(mainWindow)
   setImmediate(() => {
     setupHookScript()
     setupClaudeSettings()
+    setupSessionManagerPrompt()
   })
 
   app.on('activate', () => {

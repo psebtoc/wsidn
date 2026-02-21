@@ -101,6 +101,7 @@
   "todo.addChecklist": "체크리스트 추가",
   "todo.newChecklistItem": "완료 기준...",
 
+  "mindtree.title": "Mind Tree",
   "mindtree.task": "Task",
   "mindtree.decision": "Decision",
   "mindtree.note": "Note",
@@ -109,6 +110,9 @@
   "mindtree.newTask": "새 할 일...",
   "mindtree.newDecision": "새 결정...",
   "mindtree.newNote": "새 메모...",
+  "mindtree.smEnable": "Session Manager 활성화",
+  "mindtree.smDisable": "Session Manager 비활성화",
+  "mindtree.selectModel": "모델 선택",
 
   "template.title": "템플릿",
   "template.global": "전역",

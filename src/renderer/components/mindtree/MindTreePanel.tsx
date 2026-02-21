@@ -1,21 +1,39 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
+import { Zap, Loader2 } from 'lucide-react'
 import { useTodoStore } from '@renderer/stores/todo-store'
+import { useSessionStore } from '@renderer/stores/session-store'
+import { useConfigStore } from '@renderer/stores/config-store'
+import { sessionService } from '@renderer/services/session-service'
 import type { MindTreeCategory } from '@renderer/types/project'
+import Tooltip from '@renderer/components/ui/Tooltip'
 import MindTreeSection from './MindTreeSection'
 import NoteSection from './NoteSection'
 
 interface MindTreePanelProps {
   projectId: string
-  sessionId: string
+  sessionId: string       // = claudeSessionId
+  wsidnSessionId: string  // WSIDN's own session UUID
+  cwd: string
 }
 
 const CATEGORIES: MindTreeCategory[] = ['task', 'decision', 'note']
 const HEADER_HEIGHT = 28 // section header height in px
 
-export default function MindTreePanel({ projectId, sessionId }: MindTreePanelProps) {
+export default function MindTreePanel({ projectId, sessionId, wsidnSessionId, cwd }: MindTreePanelProps) {
+  const { t } = useTranslation()
   const todos = useTodoStore((s) => s.todos)
   const loading = useTodoStore((s) => s.loading)
   const loadTodos = useTodoStore((s) => s.loadTodos)
+
+  const sessionManagerEnabled = useSessionStore((s) => s.sessionManagerEnabled[wsidnSessionId] ?? false)
+  const toggleSessionManager = useSessionStore((s) => s.toggleSessionManager)
+
+  const config = useConfigStore((s) => s.config)
+  const updateConfig = useConfigStore((s) => s.updateConfig)
+  const model = config.sessionManager?.model ?? 'haiku'
+
+  const [smProcessing, setSmProcessing] = useState(false)
 
   // Flex-grow weights for each section (default equal)
   const [weights, setWeights] = useState<[number, number, number]>([1, 1, 1])
@@ -26,6 +44,46 @@ export default function MindTreePanel({ projectId, sessionId }: MindTreePanelPro
   useEffect(() => {
     loadTodos(projectId, sessionId)
   }, [projectId, sessionId, loadTodos])
+
+  // Subscribe to SESSION_MANAGER_PROCESSING events — show spinner while claude -p runs
+  useEffect(() => {
+    return sessionService.onSessionManagerProcessing((payload) => {
+      if (payload.wsidnSessionId === wsidnSessionId) {
+        setSmProcessing(true)
+      }
+    })
+  }, [wsidnSessionId])
+
+  // Subscribe to SESSION_MANAGER_UPDATED events — reload todos when our session is updated
+  useEffect(() => {
+    return sessionService.onSessionManagerUpdated((payload) => {
+      if (payload.projectId === projectId && payload.claudeSessionId === sessionId) {
+        setSmProcessing(false)
+        loadTodos(projectId, sessionId)
+      }
+    })
+  }, [projectId, sessionId, loadTodos])
+
+  // Track processing state: set to true when prompt is submitted (use a brief spinner)
+  // We watch the SESSION_MANAGER_UPDATED event to clear it (done above)
+  // We also clear it after a timeout in case the update never arrives
+  useEffect(() => {
+    if (!smProcessing) return
+    const timer = setTimeout(() => setSmProcessing(false), 30_000) // 30s max
+    return () => clearTimeout(timer)
+  }, [smProcessing])
+
+  const handleToggle = useCallback(async () => {
+    setSmProcessing(false)
+    await toggleSessionManager(wsidnSessionId, projectId, cwd, sessionId)
+  }, [toggleSessionManager, wsidnSessionId, projectId, cwd, sessionId])
+
+  const handleModelChange = useCallback(
+    async (newModel: 'haiku' | 'sonnet' | 'opus') => {
+      await updateConfig({ sessionManager: { model: newModel } })
+    },
+    [updateConfig]
+  )
 
   const itemsByCategory = useMemo(() => {
     const map: Record<MindTreeCategory, typeof todos> = { task: [], decision: [], note: [] }
@@ -76,36 +134,13 @@ export default function MindTreePanel({ projectId, sessionId }: MindTreePanelPro
 
       if (availableHeight <= 0) return
 
-      // The divider at dragIndex sits between openIndices[dragIndex] and openIndices[dragIndex+1]
       const aboveSectionIdx = openIndices[dragIndex]
       const belowSectionIdx = openIndices[dragIndex + 1]
       if (aboveSectionIdx === undefined || belowSectionIdx === undefined) return
 
-      // Calculate cumulative header heights above the two sections
-      let headersBefore = 0
-      for (let i = 0; i < CATEGORIES.length; i++) {
-        if (i <= aboveSectionIdx && collapsedSet.has(CATEGORIES[i])) {
-          headersBefore += HEADER_HEIGHT
-        }
-      }
-      // Also count headers of open sections above the pair
-      for (let i = 0; i < openIndices.length; i++) {
-        if (openIndices[i] < aboveSectionIdx) {
-          // This open section's header is part of the layout
-        }
-      }
-
-      // Simpler approach: compute mouse position relative to container,
-      // then compute weights proportionally
       const mouseY = e.clientY - rect.top
-
-      // Calculate the position range where this divider can move
-      // = after above section's start, before below section's end
-      // For simplicity, just adjust the weight ratio between the two sections
       const totalWeight = weights[aboveSectionIdx] + weights[belowSectionIdx]
 
-      // Get the top of the above section and bottom of below section in pixels
-      // by computing layout positions
       let accY = 0
       let aboveTop = 0
       let belowBottom = 0
@@ -187,10 +222,41 @@ export default function MindTreePanel({ projectId, sessionId }: MindTreePanelPro
   return (
     <div className="w-64 h-full bg-surface border-l border-border-default/50 flex flex-col select-none shrink-0">
       {/* Header */}
-      <div className="px-3 py-2 border-b border-border-subtle flex items-center">
-        <span className="text-xs font-medium text-fg-secondary uppercase tracking-wider">
-          Mind Tree
+      <div className="px-3 py-1.5 border-b border-border-subtle flex items-center gap-1.5">
+        <span className="text-xs font-medium text-fg-secondary uppercase tracking-wider flex-1">
+          {t('mindtree.title')}
         </span>
+
+        {/* Model dropdown */}
+        <select
+          value={model}
+          onChange={(e) => handleModelChange(e.target.value as 'haiku' | 'sonnet' | 'opus')}
+          className="text-[10px] bg-elevated border border-border-input rounded px-1 py-0.5 text-fg-dim
+                     outline-none focus:border-primary transition-colors cursor-pointer"
+          title={t('mindtree.selectModel')}
+        >
+          <option value="haiku">haiku</option>
+          <option value="sonnet">sonnet</option>
+          <option value="opus">opus</option>
+        </select>
+
+        {/* Session Manager toggle */}
+        <Tooltip content={sessionManagerEnabled ? t('mindtree.smDisable') : t('mindtree.smEnable')} side="bottom">
+          <button
+            onClick={handleToggle}
+            className={`w-6 h-6 flex items-center justify-center rounded transition-colors ${
+              sessionManagerEnabled
+                ? 'bg-primary/20 text-primary'
+                : 'text-fg-dim hover:text-fg-secondary hover:bg-elevated'
+            }`}
+          >
+            {smProcessing ? (
+              <Loader2 size={12} className="animate-spin" />
+            ) : (
+              <Zap size={12} />
+            )}
+          </button>
+        </Tooltip>
       </div>
 
       {/* Sections container */}

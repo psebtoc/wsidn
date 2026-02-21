@@ -7,6 +7,7 @@ interface TodoState {
   expandedIds: Set<string>
   loading: boolean
   currentProjectId: string | null
+  currentSessionId: string | null
   // actions
   loadTodos: (projectId: string, sessionId: string) => Promise<void>
   addTodo: (input: CreateTodoInput) => Promise<Todo>
@@ -31,9 +32,10 @@ export const useTodoStore = create<TodoState>((set, get) => ({
   expandedIds: new Set<string>(),
   loading: false,
   currentProjectId: null,
+  currentSessionId: null,
 
   loadTodos: async (projectId, sessionId) => {
-    set({ loading: true, currentProjectId: projectId })
+    set({ loading: true, currentProjectId: projectId, currentSessionId: sessionId })
     const todos = await todoService.list(projectId, sessionId)
     set({ todos, loading: false })
   },

@@ -77,6 +77,22 @@ export interface WsidnAPI {
   claude: {
     onSessionEvent: (callback: (event: ClaudeSessionEvent) => void) => () => void
   }
+  sessionManager: {
+    setEnabled: (
+      wsidnSessionId: string,
+      enabled: boolean,
+      info?: { projectId: string; cwd: string; claudeSessionId: string | null }
+    ) => Promise<IpcResult<boolean>>
+    getStatus: (wsidnSessionId: string) => Promise<IpcResult<{ enabled: boolean }>>
+    onUpdated: (
+      callback: (payload: {
+        wsidnSessionId: string
+        projectId: string
+        claudeSessionId: string
+      }) => void
+    ) => () => void
+    onProcessing: (callback: (payload: { wsidnSessionId: string }) => void) => () => void
+  }
   window: {
     minimize: () => void
     maximize: () => void

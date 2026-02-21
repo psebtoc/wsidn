@@ -18,6 +18,9 @@ interface AppConfig {
   defaultShell: string
   terminal: TerminalConfig
   language: 'ko' | 'en'
+  sessionManager?: {
+    model?: 'haiku' | 'sonnet' | 'opus'
+  }
 }
 
 const DEFAULT_TERMINAL: TerminalConfig = {

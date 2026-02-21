@@ -4,6 +4,7 @@ import { registerPtyIpc } from '@main/pty/pty-ipc'
 import { registerStorageIpc } from '@main/storage/storage-ipc'
 import { registerTodoIpc } from '@main/storage/todo-ipc'
 import { registerTemplateIpc } from '@main/storage/template-ipc'
+import { registerSessionManagerIpc } from '@main/session-manager/session-manager-ipc'
 
 function registerWindowIpc(): void {
   ipcMain.on(IPC_CHANNELS.WINDOW_MINIMIZE, () => {
@@ -31,4 +32,5 @@ export function registerAllIpc(): void {
   registerTemplateIpc()
   registerPtyIpc()
   registerWindowIpc()
+  registerSessionManagerIpc()
 }

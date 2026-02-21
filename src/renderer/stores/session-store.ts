@@ -121,6 +121,8 @@ interface SessionState {
   claudeActivities: Record<string, ClaudeActivity>
   minimizedPaneIds: string[]
   resumeHistory: ResumeHistoryEntry[]
+  // Session Manager enabled state (runtime only, per WSIDN session UUID)
+  sessionManagerEnabled: Record<string, boolean>
 
   loadSessions: (projectId: string, cwd: string) => Promise<void>
 
@@ -159,6 +161,9 @@ interface SessionState {
   // Session creation with command
   createSessionInPaneWithCommand: (paneId: string, projectId: string, cwd: string, command: string) => Promise<void>
   createWorktreeSessionInPane: (paneId: string, projectId: string, cwd: string, name: string) => Promise<void>
+
+  // Session Manager
+  toggleSessionManager: (wsidnSessionId: string, projectId: string, cwd: string, claudeSessionId: string | null) => Promise<void>
 }
 
 export const useSessionStore = create<SessionState>((set, get) => ({
@@ -169,6 +174,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   claudeActivities: {},
   minimizedPaneIds: [],
   resumeHistory: [],
+  sessionManagerEnabled: {},
 
   loadSessions: async (projectId: string, cwd: string) => {
     _currentProjectId = projectId
@@ -757,6 +763,19 @@ export const useSessionStore = create<SessionState>((set, get) => ({
           sessionService.terminalInput(session.id, `claude -w "${name}"\n`)
         }, 100)
       }
+    })
+  },
+
+  toggleSessionManager: async (wsidnSessionId, projectId, cwd, claudeSessionId) => {
+    const current = get().sessionManagerEnabled[wsidnSessionId] ?? false
+    const next = !current
+    set((s) => ({
+      sessionManagerEnabled: { ...s.sessionManagerEnabled, [wsidnSessionId]: next },
+    }))
+    await sessionService.sessionManagerSetEnabled(wsidnSessionId, next, {
+      projectId,
+      cwd,
+      claudeSessionId,
     })
   },
 }))
