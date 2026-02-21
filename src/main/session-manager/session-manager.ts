@@ -1,7 +1,9 @@
 import { spawn } from 'child_process'
 import type { ChildProcess } from 'child_process'
 import { BrowserWindow } from 'electron'
-import { existsSync, readFileSync } from 'fs'
+import { existsSync, readFileSync, writeFileSync, unlinkSync } from 'fs'
+import { tmpdir } from 'os'
+import { join } from 'path'
 import { IPC_CHANNELS } from '@main/ipc/channels'
 import { listTodos, replaceTasksAndDecisions } from '@main/storage/todo-storage'
 import { getAppDataPath, readJson } from '@main/storage/storage-manager'
@@ -54,6 +56,7 @@ class SessionManager {
 
   updateClaudeSession(wsidnSessionId: string, claudeSessionId: string | null): void {
     const info = this.sessions.get(wsidnSessionId)
+    console.log(`[SessionManager] updateClaudeSession: wsidnId=${wsidnSessionId} claudeSessionId=${claudeSessionId} sessionKnown=${!!info} smEnabled=${this.enabledSessions.has(wsidnSessionId)}`)
     if (info) {
       info.claudeSessionId = claudeSessionId
     }
@@ -76,10 +79,12 @@ class SessionManager {
         this.sessions.set(wsidnSessionId, info)
       }
       this.enabledSessions.add(wsidnSessionId)
+      console.log(`[SessionManager] enabled: wsidnId=${wsidnSessionId} projectId=${info?.projectId} claudeSessionId=${info?.claudeSessionId} cwd=${info?.cwd}`)
     } else {
       this.killActive(wsidnSessionId)
       this.pendingPrompts.delete(wsidnSessionId)
       this.enabledSessions.delete(wsidnSessionId)
+      console.log(`[SessionManager] disabled: wsidnId=${wsidnSessionId}`)
     }
   }
 
@@ -88,20 +93,29 @@ class SessionManager {
   }
 
   onPromptSubmit(wsidnSessionId: string, prompt: string): void {
-    if (!this.enabledSessions.has(wsidnSessionId)) return
+    const isEnabled = this.enabledSessions.has(wsidnSessionId)
+    const sessionInfo = this.sessions.get(wsidnSessionId)
+    console.log(`[SessionManager] onPromptSubmit: wsidnId=${wsidnSessionId} enabled=${isEnabled} sessionKnown=${!!sessionInfo} claudeSessionId=${sessionInfo?.claudeSessionId ?? 'none'}`)
+    if (!isEnabled) {
+      console.log(`[SessionManager] onPromptSubmit: SKIPPED — session not enabled`)
+      return
+    }
 
     // Accumulate prompt
     const existing = this.pendingPrompts.get(wsidnSessionId) ?? []
     existing.push(prompt)
     this.pendingPrompts.set(wsidnSessionId, existing)
+    console.log(`[SessionManager] onPromptSubmit: accumulated ${existing.length} prompt(s)`)
 
     // Kill active process — close handler will re-run with accumulated prompts
     if (this.activeProcesses.has(wsidnSessionId)) {
+      console.log(`[SessionManager] onPromptSubmit: active process found — killing and requeueing`)
       this.killActive(wsidnSessionId)
       return
     }
 
     // No active process — start immediately
+    console.log(`[SessionManager] onPromptSubmit: starting run()`)
     this.run(wsidnSessionId).catch((err) => {
       console.error(`[SessionManager] run error for ${wsidnSessionId}:`, err)
     })
@@ -198,20 +212,27 @@ class SessionManager {
 
   private async run(wsidnSessionId: string): Promise<void> {
     const info = this.sessions.get(wsidnSessionId)
+    console.log(`[SessionManager] run(): wsidnId=${wsidnSessionId} info=${JSON.stringify(info)}`)
     if (!info?.claudeSessionId) {
       // No Claude session yet — discard pending prompts
+      console.log(`[SessionManager] run(): ABORTED — no claudeSessionId, discarding prompts`)
       this.pendingPrompts.delete(wsidnSessionId)
       return
     }
 
     const prompts = this.pendingPrompts.get(wsidnSessionId) ?? []
     this.pendingPrompts.delete(wsidnSessionId)
-    if (prompts.length === 0) return
+    if (prompts.length === 0) {
+      console.log(`[SessionManager] run(): ABORTED — no pending prompts`)
+      return
+    }
 
     const { projectId, cwd, claudeSessionId } = info
     const systemPrompt = this.getSystemPrompt()
     const model = this.getModel()
+    console.log(`[SessionManager] run(): projectId=${projectId} claudeSessionId=${claudeSessionId} model=${model} cwd=${cwd} prompts=${prompts.length}`)
     const inputText = this.buildInputText(prompts, claudeSessionId, projectId)
+    console.log(`[SessionManager] run(): inputText length=${inputText.length}`)
 
     // Notify renderer that processing has started
     if (this.mainWindow && !this.mainWindow.isDestroyed()) {
@@ -220,21 +241,32 @@ class SessionManager {
       })
     }
 
+    // Write system prompt to temp file to avoid Windows shell arg-length/newline issues
+    const promptFile = join(tmpdir(), `wsidn-sm-${Date.now()}.md`)
+    writeFileSync(promptFile, systemPrompt, 'utf-8')
+    console.log(`[SessionManager] wrote system prompt to ${promptFile}`)
+
     return new Promise<void>((resolve) => {
       const args = [
         '-p',
         '--output-format', 'json',
-        '-m', model,
-        '--system-prompt', systemPrompt,
-        inputText,
+        '--model', model,
+        '--system-prompt-file', promptFile,
       ]
 
+      console.log(`[SessionManager] spawning: claude ${args.join(' ')}`)
+      console.log(`[SessionManager] stdin will receive inputText (${inputText.length} chars)`)
       const proc = spawn('claude', args, {
         cwd,
         env: { ...process.env },
         windowsHide: true,
         shell: process.platform === 'win32',
       })
+      console.log(`[SessionManager] spawned PID=${proc.pid ?? 'unknown'}`)
+
+      // Send input text via stdin instead of positional arg (avoids shell quoting issues)
+      proc.stdin?.write(inputText, 'utf-8')
+      proc.stdin?.end()
 
       this.activeProcesses.set(wsidnSessionId, proc)
 
@@ -242,35 +274,47 @@ class SessionManager {
       let wasKilled = false
 
       proc.stdout?.on('data', (chunk: Buffer) => {
-        stdout += chunk.toString()
+        const s = chunk.toString()
+        stdout += s
+        console.log(`[SessionManager] stdout chunk: ${s.slice(0, 120)}`)
       })
 
       proc.stderr?.on('data', (chunk: Buffer) => {
-        console.warn(`[SessionManager] stderr: ${chunk.toString()}`)
+        console.warn(`[SessionManager] stderr: ${chunk.toString().trim()}`)
       })
 
       proc.on('close', (code, signal) => {
         this.activeProcesses.delete(wsidnSessionId)
         wasKilled = !!signal
+        console.log(`[SessionManager] close: code=${code} signal=${signal} wasKilled=${wasKilled} stdoutLen=${stdout.length}`)
+        try { unlinkSync(promptFile) } catch { /* ignore */ }
 
         if (!wasKilled && code === 0) {
           try {
+            console.log(`[SessionManager] raw stdout: ${stdout.slice(0, 500)}`)
             const schema = this.parseOutput(stdout)
+            console.log(`[SessionManager] parsed: tasks=${schema.tasks?.length ?? 0} decisions=${schema.decisions?.length ?? 0}`)
             replaceTasksAndDecisions(
               projectId,
               claudeSessionId,
               schema.tasks ?? [],
               schema.decisions ?? []
             )
+            console.log(`[SessionManager] Mind Tree updated — notifying renderer`)
             this.notifyRenderer(wsidnSessionId, projectId, claudeSessionId)
           } catch (err) {
             console.error(`[SessionManager] applyUpdate failed for ${wsidnSessionId}:`, err)
           }
+        } else if (wasKilled) {
+          console.log(`[SessionManager] process was killed — will requeue if pending prompts exist`)
+        } else {
+          console.warn(`[SessionManager] process exited with code=${code} — skipping update`)
         }
 
         // Re-run if new prompts arrived while we were running (or after kill)
         const newPrompts = this.pendingPrompts.get(wsidnSessionId) ?? []
         if (newPrompts.length > 0 && this.enabledSessions.has(wsidnSessionId)) {
+          console.log(`[SessionManager] ${newPrompts.length} pending prompt(s) after close — re-running`)
           this.run(wsidnSessionId).then(resolve).catch(() => resolve())
         } else {
           resolve()

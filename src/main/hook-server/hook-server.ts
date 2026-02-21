@@ -93,6 +93,7 @@ class HookServer {
 
   private handleSessionStart(payload: HookPayload): void {
     const { wsidn_session_id, claude_session_id, source, model } = payload
+    console.log(`[HookServer] session-start: wsidnId=${wsidn_session_id} claudeId=${claude_session_id} source=${source} model=${model}`)
 
     // Keep session manager's claudeSessionId in sync
     sessionManager.updateClaudeSession(wsidn_session_id, claude_session_id)
@@ -110,6 +111,7 @@ class HookServer {
 
   private handleSessionStop(payload: HookPayload): void {
     const { wsidn_session_id } = payload
+    console.log(`[HookServer] session-stop: wsidnId=${wsidn_session_id}`)
 
     // Keep session manager's claudeSessionId in sync
     sessionManager.updateClaudeSession(wsidn_session_id, null)
@@ -127,6 +129,7 @@ class HookServer {
 
   private handlePromptSubmit(payload: PromptSubmitPayload): void {
     const { wsidn_session_id, prompt } = payload
+    console.log(`[HookServer] prompt-submit: wsidnId=${wsidn_session_id} prompt="${prompt.slice(0, 80)}${prompt.length > 80 ? '...' : ''}"`)
     sessionManager.onPromptSubmit(wsidn_session_id, prompt)
   }
 }
