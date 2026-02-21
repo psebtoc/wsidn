@@ -5,6 +5,24 @@ export const sessionService = {
   async close(sessionId: string) {
     return unwrapIpc(await window.wsidn.session.close(sessionId))
   },
+  async sessionManagerSetEnabled(
+    wsidnSessionId: string,
+    enabled: boolean,
+    info?: { projectId: string; cwd: string; claudeSessionId: string | null }
+  ) {
+    return unwrapIpc(await window.wsidn.sessionManager.setEnabled(wsidnSessionId, enabled, info))
+  },
+  async sessionManagerGetStatus(wsidnSessionId: string) {
+    return unwrapIpc(await window.wsidn.sessionManager.getStatus(wsidnSessionId))
+  },
+  onSessionManagerUpdated(
+    cb: (payload: { wsidnSessionId: string; projectId: string; claudeSessionId: string }) => void
+  ) {
+    return window.wsidn.sessionManager.onUpdated(cb)
+  },
+  onSessionManagerProcessing(cb: (payload: { wsidnSessionId: string }) => void) {
+    return window.wsidn.sessionManager.onProcessing(cb)
+  },
   async spawn(sessionId: string, cwd: string) {
     return unwrapIpc(await window.wsidn.session.spawn(sessionId, cwd))
   },

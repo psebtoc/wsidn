@@ -2,12 +2,18 @@ import http from 'http'
 import { BrowserWindow } from 'electron'
 import { IPC_CHANNELS } from '@main/ipc/channels'
 import { getAppDataPath, writeJson } from '@main/storage/storage-manager'
+import { sessionManager } from '@main/session-manager/session-manager'
 
 interface HookPayload {
   wsidn_session_id: string
   claude_session_id: string | null
   source: string
   model: string
+}
+
+interface PromptSubmitPayload {
+  wsidn_session_id: string
+  prompt: string
 }
 
 class HookServer {
@@ -22,19 +28,28 @@ class HookServer {
   async start(): Promise<void> {
     return new Promise((resolve, reject) => {
       this.server = http.createServer((req, res) => {
-        if (req.method === 'POST' && (req.url === '/hook/session-start' || req.url === '/hook/session-stop')) {
-          const isStop = req.url === '/hook/session-stop'
+        if (req.method === 'POST' && req.url) {
           let body = ''
           req.on('data', (chunk) => {
             body += chunk
           })
           req.on('end', () => {
             try {
-              const payload = JSON.parse(body) as HookPayload
-              if (isStop) {
-                this.handleSessionStop(payload)
+              if (req.url === '/hook/session-start' || req.url === '/hook/session-stop') {
+                const isStop = req.url === '/hook/session-stop'
+                const payload = JSON.parse(body) as HookPayload
+                if (isStop) {
+                  this.handleSessionStop(payload)
+                } else {
+                  this.handleSessionStart(payload)
+                }
+              } else if (req.url === '/hook/prompt-submit') {
+                const payload = JSON.parse(body) as PromptSubmitPayload
+                this.handlePromptSubmit(payload)
               } else {
-                this.handleSessionStart(payload)
+                res.writeHead(404)
+                res.end()
+                return
               }
               res.writeHead(200, { 'Content-Type': 'application/json' })
               res.end('{"ok":true}')
@@ -79,6 +94,9 @@ class HookServer {
   private handleSessionStart(payload: HookPayload): void {
     const { wsidn_session_id, claude_session_id, source, model } = payload
 
+    // Keep session manager's claudeSessionId in sync
+    sessionManager.updateClaudeSession(wsidn_session_id, claude_session_id)
+
     // Push event to renderer (no disk operations)
     if (this.mainWindow && !this.mainWindow.isDestroyed()) {
       this.mainWindow.webContents.send(IPC_CHANNELS.CLAUDE_SESSION_EVENT, {
@@ -93,6 +111,9 @@ class HookServer {
   private handleSessionStop(payload: HookPayload): void {
     const { wsidn_session_id } = payload
 
+    // Keep session manager's claudeSessionId in sync
+    sessionManager.updateClaudeSession(wsidn_session_id, null)
+
     // Push stop event to renderer (no disk operations)
     if (this.mainWindow && !this.mainWindow.isDestroyed()) {
       this.mainWindow.webContents.send(IPC_CHANNELS.CLAUDE_SESSION_EVENT, {
@@ -102,6 +123,11 @@ class HookServer {
         model: ''
       })
     }
+  }
+
+  private handlePromptSubmit(payload: PromptSubmitPayload): void {
+    const { wsidn_session_id, prompt } = payload
+    sessionManager.onPromptSubmit(wsidn_session_id, prompt)
   }
 }
 

@@ -17,6 +17,9 @@ const DEFAULT_CONFIG: AppConfig = {
     scrollback: 5000,
   },
   language: 'ko',
+  sessionManager: {
+    model: 'haiku',
+  },
 }
 
 function applyTheme(themeId: string, accentColorId?: string | null): void {
@@ -56,6 +59,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         ...DEFAULT_CONFIG,
         ...config,
         terminal: { ...DEFAULT_CONFIG.terminal, ...config.terminal },
+        sessionManager: { ...DEFAULT_CONFIG.sessionManager, ...config.sessionManager },
       }
       set({ config: merged, loaded: true })
       applyTheme(merged.theme, merged.accentColor)

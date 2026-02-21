@@ -3,6 +3,7 @@ import { v4 as uuid } from 'uuid'
 import { getAppDataPath, readJson, writeJson, ensureDir } from './storage-manager'
 
 type MindTreeCategory = 'task' | 'decision' | 'note'
+type TodoStatus = 'pending' | 'in_progress' | 'done' | 'blocked'
 
 interface Todo {
   id: string
@@ -10,7 +11,7 @@ interface Todo {
   category: MindTreeCategory
   title: string
   description: string
-  status: 'pending' | 'in_progress' | 'done'
+  status: TodoStatus
   priority: 'low' | 'medium' | 'high'
   parentId: string | null
   order: number
@@ -67,7 +68,7 @@ export function updateTodo(input: {
   sessionId: string
   title?: string
   description?: string
-  status?: 'pending' | 'in_progress' | 'done'
+  status?: TodoStatus
   priority?: 'low' | 'medium' | 'high'
   parentId?: string | null
   order?: number
@@ -100,6 +101,88 @@ export function copyTodos(projectId: string, fromSessionId: string, toSessionId:
   const destPath = mindtreePath(projectId, toSessionId)
   ensureDir(join(destPath, '..'))
   writeJson(destPath, copied)
+}
+
+/**
+ * Replaces all task and decision todos for a session with new ones from the Session Manager.
+ * Note todos are preserved. Single atomic write.
+ */
+export function replaceTasksAndDecisions(
+  projectId: string,
+  sessionId: string,
+  tasks: Array<{
+    title: string
+    status?: TodoStatus
+    blockedReason?: string | null
+    checklist?: string[]
+  }>,
+  decisions: Array<{ title: string }>
+): Todo[] {
+  const filePath = mindtreePath(projectId, sessionId)
+  ensureDir(join(filePath, '..'))
+
+  // Keep notes, replace everything else
+  const existing = listTodos(projectId, sessionId)
+  const notes = existing.filter((t) => t.category === 'note')
+
+  const now = new Date().toISOString()
+  const newTodos: Todo[] = [...notes]
+  let order = notes.length
+
+  for (const task of tasks) {
+    const taskId = uuid()
+    const status: TodoStatus =
+      task.status === 'blocked' || task.status === 'in_progress' || task.status === 'done'
+        ? task.status
+        : 'pending'
+    newTodos.push({
+      id: taskId,
+      sessionId,
+      category: 'task',
+      title: task.title,
+      description: task.blockedReason ?? '',
+      status,
+      priority: 'medium',
+      parentId: null,
+      order: order++,
+      createdAt: now,
+      updatedAt: now,
+    })
+    for (const item of task.checklist ?? []) {
+      newTodos.push({
+        id: uuid(),
+        sessionId,
+        category: 'task',
+        title: item,
+        description: '',
+        status: 'pending',
+        priority: 'medium',
+        parentId: taskId,
+        order: order++,
+        createdAt: now,
+        updatedAt: now,
+      })
+    }
+  }
+
+  for (const decision of decisions) {
+    newTodos.push({
+      id: uuid(),
+      sessionId,
+      category: 'decision',
+      title: decision.title,
+      description: '',
+      status: 'pending',
+      priority: 'medium',
+      parentId: null,
+      order: order++,
+      createdAt: now,
+      updatedAt: now,
+    })
+  }
+
+  writeJson(filePath, newTodos)
+  return newTodos
 }
 
 export function deleteTodo(projectId: string, sessionId: string, id: string): void {

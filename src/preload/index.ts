@@ -109,6 +109,45 @@ contextBridge.exposeInMainWorld('wsidn', {
     }
   },
 
+  sessionManager: {
+    setEnabled: (
+      wsidnSessionId: string,
+      enabled: boolean,
+      info?: { projectId: string; cwd: string; claudeSessionId: string | null }
+    ) =>
+      ipcRenderer.invoke('sessionManager:setEnabled', {
+        wsidnSessionId,
+        enabled,
+        ...info,
+      }),
+    getStatus: (wsidnSessionId: string) =>
+      ipcRenderer.invoke('sessionManager:getStatus', { wsidnSessionId }),
+    onUpdated: (
+      callback: (payload: {
+        wsidnSessionId: string
+        projectId: string
+        claudeSessionId: string
+      }) => void
+    ) => {
+      const handler = (
+        _e: IpcRendererEvent,
+        payload: { wsidnSessionId: string; projectId: string; claudeSessionId: string }
+      ) => callback(payload)
+      ipcRenderer.on('sessionManager:updated', handler)
+      return () => {
+        ipcRenderer.removeListener('sessionManager:updated', handler)
+      }
+    },
+    onProcessing: (callback: (payload: { wsidnSessionId: string }) => void) => {
+      const handler = (_e: IpcRendererEvent, payload: { wsidnSessionId: string }) =>
+        callback(payload)
+      ipcRenderer.on('sessionManager:processing', handler)
+      return () => {
+        ipcRenderer.removeListener('sessionManager:processing', handler)
+      }
+    },
+  },
+
   window: {
     minimize: () => ipcRenderer.send('window:minimize'),
     maximize: () => ipcRenderer.send('window:maximize'),

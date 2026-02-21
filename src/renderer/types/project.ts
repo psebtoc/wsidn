@@ -59,12 +59,15 @@ export interface AppConfig {
   defaultShell: string
   terminal: TerminalConfig
   language: 'ko' | 'en'
+  sessionManager: {
+    model: 'haiku' | 'sonnet' | 'opus'
+  }
 }
 
 // --- Mind Tree ---
 
 export type MindTreeCategory = 'task' | 'decision' | 'note'
-export type TodoStatus = 'pending' | 'in_progress' | 'done'
+export type TodoStatus = 'pending' | 'in_progress' | 'done' | 'blocked'
 export type TodoPriority = 'low' | 'medium' | 'high'
 
 export interface Todo {

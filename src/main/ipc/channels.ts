@@ -45,6 +45,12 @@ export const IPC_CHANNELS = {
   // Claude session binding (main → renderer, one-way)
   CLAUDE_SESSION_EVENT: 'claude:session-event',
 
+  // Session Manager
+  SESSION_MANAGER_SET_ENABLED: 'sessionManager:setEnabled',
+  SESSION_MANAGER_GET_STATUS: 'sessionManager:getStatus',
+  SESSION_MANAGER_UPDATED: 'sessionManager:updated',
+  SESSION_MANAGER_PROCESSING: 'sessionManager:processing',
+
   // Window
   WINDOW_MINIMIZE: 'window:minimize',
   WINDOW_MAXIMIZE: 'window:maximize',

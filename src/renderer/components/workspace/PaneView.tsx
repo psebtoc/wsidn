@@ -622,7 +622,12 @@ export default function PaneView({
         {/* Per-pane Mind Tree panel — keyed by claudeSessionId so data survives resume */}
         {showMindTree && (
           activeSession?.claudeSessionId ? (
-            <MindTreePanel projectId={projectId} sessionId={activeSession.claudeSessionId} />
+            <MindTreePanel
+              projectId={projectId}
+              sessionId={activeSession.claudeSessionId}
+              wsidnSessionId={activeSession.id}
+              cwd={activeSession.cwd}
+            />
           ) : (
             <div className="w-64 h-full bg-surface border-l border-border-default/50 flex items-center justify-center">
               <p className="text-xs text-fg-dim">{t('pane.noActiveSession')}</p>

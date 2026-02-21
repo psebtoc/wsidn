@@ -21,6 +21,11 @@ function todoStatusToCheckbox(status: TodoStatus): 'unchecked' | 'indeterminate'
   return 'unchecked'
 }
 
+function getStatusColor(status: TodoStatus): string {
+  if (status === 'blocked') return 'text-amber-400'
+  return ''
+}
+
 export default function TaskItem({ todo, projectId }: TaskItemProps) {
   const { t } = useTranslation()
   const todos = useTodoStore((s) => s.todos)
@@ -44,6 +49,11 @@ export default function TaskItem({ todo, projectId }: TaskItemProps) {
   }, [addingChecklist])
 
   const handleStatusToggle = () => {
+    // Blocked items → pending when clicked (unblock)
+    if (todo.status === 'blocked') {
+      updateTodo({ id: todo.id, status: 'pending' })
+      return
+    }
     const currentIdx = STATUS_CYCLE.indexOf(todo.status)
     const nextStatus = STATUS_CYCLE[(currentIdx + 1) % STATUS_CYCLE.length]
     updateTodo({ id: todo.id, status: nextStatus })
@@ -96,16 +106,30 @@ export default function TaskItem({ todo, projectId }: TaskItemProps) {
 
         {/* Status checkbox */}
         <Tooltip content={todo.status} side="top">
-          <Checkbox
-            state={todoStatusToCheckbox(todo.status)}
-            onChange={handleStatusToggle}
-          />
+          {todo.status === 'blocked' ? (
+            <button
+              onClick={handleStatusToggle}
+              className="w-3.5 h-3.5 flex items-center justify-center text-amber-400 shrink-0"
+              title="blocked — click to unblock"
+            >
+              <span className="text-[10px] leading-none">⊘</span>
+            </button>
+          ) : (
+            <Checkbox
+              state={todoStatusToCheckbox(todo.status)}
+              onChange={handleStatusToggle}
+            />
+          )}
         </Tooltip>
 
         {/* Title */}
         <span
           className={`flex-1 text-xs truncate ${
-            isDone ? 'line-through text-fg-dim' : 'text-fg-secondary'
+            isDone
+              ? 'line-through text-fg-dim'
+              : todo.status === 'blocked'
+                ? getStatusColor(todo.status)
+                : 'text-fg-secondary'
           }`}
         >
           {todo.title}

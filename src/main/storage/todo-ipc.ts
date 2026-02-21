@@ -48,7 +48,7 @@ export function registerTodoIpc(): void {
         sessionId: string
         title?: string
         description?: string
-        status?: 'pending' | 'in_progress' | 'done'
+        status?: 'pending' | 'in_progress' | 'done' | 'blocked'
         priority?: 'low' | 'medium' | 'high'
         parentId?: string | null
         order?: number
