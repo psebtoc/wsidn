@@ -8,7 +8,7 @@ import { setupHookScript, setupClaudeSettings } from './hook-server/hook-setup'
 import { readJson, writeJson, getAppDataPath } from './storage/storage-manager'
 
 // Set userData path before app ready
-app.setPath('userData', join(app.getPath('appData'), 'wsidn'))
+app.setPath('userData', join(app.getPath('appData'), app.isPackaged ? 'wsidn' : 'wsidn-dev'))
 
 // --- Window bounds persistence ---
 
@@ -44,6 +44,7 @@ function createWindow(): BrowserWindow {
     width: saved.width,
     height: saved.height,
     frame: false,
+    backgroundColor: '#171717',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false
@@ -98,8 +99,10 @@ app.whenReady().then(() => {
 
   hookServer.init(mainWindow)
   hookServer.start().catch((err) => console.error('[HookServer] start failed:', err))
-  setupHookScript()
-  setupClaudeSettings()
+  setImmediate(() => {
+    setupHookScript()
+    setupClaudeSettings()
+  })
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
