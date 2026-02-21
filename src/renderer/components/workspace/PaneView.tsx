@@ -10,7 +10,7 @@ import Tooltip from '@renderer/components/ui/Tooltip'
 import MindTreePanel from '@renderer/components/mindtree/MindTreePanel'
 import TerminalPane from './TerminalPane'
 import SessionContextMenu from './SessionContextMenu'
-import WorktreeBranchDialog from './WorktreeBranchDialog'
+
 
 type DropEdge = 'top' | 'bottom' | 'left' | 'right' | null
 
@@ -28,7 +28,6 @@ interface PaneViewProps {
   onClosePane: () => void
   onMinimize?: () => void
   onCreateSessionWithCommand?: (command: string) => void
-  onCreateWorktreeSession?: (branchName: string) => void
   resumeHistory?: ResumeHistoryEntry[]
 }
 
@@ -46,7 +45,6 @@ export default function PaneView({
   onClosePane,
   onMinimize,
   onCreateSessionWithCommand,
-  onCreateWorktreeSession,
   resumeHistory = []
 }: PaneViewProps) {
   const { t } = useTranslation()
@@ -56,7 +54,6 @@ export default function PaneView({
   const [dropEdge, setDropEdge] = useState<DropEdge>(null)
   const [showContextMenu, setShowContextMenu] = useState(false)
   const [contextMenuAnchor, setContextMenuAnchor] = useState<DOMRect | null>(null)
-  const [showWorktreeDialog, setShowWorktreeDialog] = useState(false)
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
   const editInputRef = useRef<HTMLInputElement>(null)
@@ -641,7 +638,6 @@ export default function PaneView({
           onClose={() => setShowContextMenu(false)}
           onSelectClaude={() => onCreateSessionWithCommand?.('claude\n')}
           onSelectClaudeDangerously={() => onCreateSessionWithCommand?.('claude --dangerously-skip-permissions\n')}
-          onSelectWorktree={() => setShowWorktreeDialog(true)}
           resumableSessions={[...resumeHistory]
             .sort((a, b) => new Date(b.closedAt).getTime() - new Date(a.closedAt).getTime())
             .map((entry) => ({
@@ -657,16 +653,6 @@ export default function PaneView({
         />
       )}
 
-      {/* Worktree branch dialog */}
-      {showWorktreeDialog && (
-        <WorktreeBranchDialog
-          onConfirm={(branchName) => {
-            setShowWorktreeDialog(false)
-            onCreateWorktreeSession?.(branchName)
-          }}
-          onCancel={() => setShowWorktreeDialog(false)}
-        />
-      )}
     </div>
   )
 }

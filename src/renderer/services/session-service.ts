@@ -5,9 +5,6 @@ export const sessionService = {
   async close(sessionId: string) {
     return unwrapIpc(await window.wsidn.session.close(sessionId))
   },
-  async createWorktree(projectId: string, cwd: string, branchName: string) {
-    return unwrapIpc(await window.wsidn.session.createWorktree(projectId, cwd, branchName))
-  },
   async spawn(sessionId: string, cwd: string) {
     return unwrapIpc(await window.wsidn.session.spawn(sessionId, cwd))
   },

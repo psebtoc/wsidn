@@ -22,7 +22,7 @@ export default function WorktreeBranchDialog({ onConfirm, onCancel }: WorktreeBr
   const handleSubmit = () => {
     const trimmed = value.trim()
     if (!trimmed) {
-      setError(t('worktreeDialog.branchRequired'))
+      setError(t('worktreeDialog.nameRequired'))
       return
     }
     if (/\s/.test(trimmed)) {
@@ -45,7 +45,7 @@ export default function WorktreeBranchDialog({ onConfirm, onCancel }: WorktreeBr
         value={value}
         onChange={(e) => { setValue(e.target.value); setError(null) }}
         onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit() }}
-        placeholder="feature/my-branch"
+        placeholder="feature-auth"
       />
       {error && <p className="mt-1.5 text-xs text-red-400">{error}</p>}
       <div className="flex justify-end gap-2 mt-4">

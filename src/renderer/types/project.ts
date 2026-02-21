@@ -3,7 +3,6 @@ export interface Project {
   name: string
   path: string
   createdAt: string
-  worktreeInitScript: string | null
 }
 
 export interface Session {
@@ -16,6 +15,7 @@ export interface Session {
   claudeModel: string | null
   claudeLastTitle: string | null
   lastClaudeSessionId: string | null
+  worktreeName: string | null
 }
 
 export interface ResumeHistoryEntry {

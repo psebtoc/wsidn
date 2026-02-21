@@ -13,8 +13,6 @@ contextBridge.exposeInMainWorld('wsidn', {
 
   session: {
     close: (sessionId: string) => ipcRenderer.invoke('session:close', { sessionId }),
-    createWorktree: (projectId: string, cwd: string, branchName: string) =>
-      ipcRenderer.invoke('session:createWorktree', { projectId, cwd, branchName }),
     spawn: (sessionId: string, cwd: string) =>
       ipcRenderer.invoke('session:spawn', { sessionId, cwd }),
   },

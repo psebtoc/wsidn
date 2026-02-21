@@ -59,9 +59,6 @@
   "projectSettings.title": "Project Settings",
   "projectSettings.name": "Name",
   "projectSettings.path": "Path",
-  "projectSettings.worktreeInitScript": "Worktree Init Script",
-  "projectSettings.worktreeInitPlaceholder": "e.g. pnpm install",
-  "projectSettings.worktreeInitDescription": "Runs before <code>claude</code> in new worktree sessions.",
 
   "workspace.noActiveSessions": "No active sessions",
   "workspace.newSession": "New Session",
@@ -91,10 +88,10 @@
   "contextMenu.timeHourAgo": "{{count}}h ago",
   "contextMenu.timeDayAgo": "{{count}}d ago",
 
-  "worktreeDialog.title": "Worktree Branch Name",
-  "worktreeDialog.branchRequired": "Branch name is required",
-  "worktreeDialog.noSpaces": "Branch name cannot contain spaces",
-  "worktreeDialog.invalidChars": "Branch name contains invalid characters",
+  "worktreeDialog.title": "Worktree Name",
+  "worktreeDialog.nameRequired": "Worktree name is required",
+  "worktreeDialog.noSpaces": "Worktree name cannot contain spaces",
+  "worktreeDialog.invalidChars": "Worktree name contains invalid characters",
 
   "todo.title": "TODO",
   "todo.addTodo": "Add todo",

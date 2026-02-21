@@ -43,7 +43,6 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
   const updateSplitRatio = useSessionStore((s) => s.updateSplitRatio)
   const handleClaudeSessionEvent = useSessionStore((s) => s.handleClaudeSessionEvent)
   const createSessionInPaneWithCommand = useSessionStore((s) => s.createSessionInPaneWithCommand)
-  const createWorktreeSessionInPane = useSessionStore((s) => s.createWorktreeSessionInPane)
   const minimizePane = useSessionStore((s) => s.minimizePane)
   const restorePane = useSessionStore((s) => s.restorePane)
   const resumeHistory = useSessionStore((s) => s.resumeHistory)
@@ -281,9 +280,6 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
                       onMinimize={() => minimizePane(pane.id)}
                       onCreateSessionWithCommand={(cmd) =>
                         createSessionInPaneWithCommand(pane.id, projectId, project.path, cmd)
-                      }
-                      onCreateWorktreeSession={(branchName) =>
-                        createWorktreeSessionInPane(pane.id, projectId, project.path, branchName)
                       }
                       resumeHistory={resumeHistory}
                     />

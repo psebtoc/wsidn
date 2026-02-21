@@ -8,7 +8,6 @@ export interface Project {
   name: string
   path: string
   createdAt: string
-  worktreeInitScript: string | null
 }
 
 /**
@@ -55,7 +54,6 @@ export function createProject(name: string, path: string): Project {
     name,
     path,
     createdAt: new Date().toISOString(),
-    worktreeInitScript: null,
   }
 
   writeJson(join(projectDir, 'project.json'), project)

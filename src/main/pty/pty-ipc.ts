@@ -1,9 +1,6 @@
 import { ipcMain } from 'electron'
-import { execSync } from 'child_process'
-import { join, basename } from 'path'
 import { IPC_CHANNELS } from '@main/ipc/channels'
 import { getAppDataPath, readJson, writeJson } from '@main/storage/storage-manager'
-import { getProject } from '@main/storage/project-storage'
 import { readResumeHistory, appendResumeHistory } from '@main/storage/resume-history'
 import { ptyManager } from './pty-manager'
 
@@ -30,32 +27,6 @@ export function registerPtyIpc(): void {
       try {
         ptyManager.spawn(sessionId, cwd)
         return { success: true, data: true }
-      } catch (err) {
-        return { success: false, error: String(err) }
-      }
-    }
-  )
-
-  // --- Worktree creation (git worktree only, no session record) ---
-
-  ipcMain.handle(
-    IPC_CHANNELS.SESSION_CREATE_WORKTREE,
-    (
-      _event,
-      { projectId, cwd, branchName }: { projectId: string; cwd: string; branchName: string }
-    ) => {
-      try {
-        const parentDir = join(cwd, '..')
-        const projectDirName = basename(cwd)
-        const worktreePath = join(parentDir, `${projectDirName}-${branchName}`)
-
-        execSync(`git worktree add "${worktreePath}" -b "${branchName}"`, { cwd })
-
-        // Read project's worktreeInitScript
-        const project = getProject(projectId)
-        const initScript = project?.worktreeInitScript ?? null
-
-        return { success: true, data: { worktreePath, initScript } }
       } catch (err) {
         return { success: false, error: String(err) }
       }

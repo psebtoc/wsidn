@@ -8,7 +8,6 @@ export const IPC_CHANNELS = {
   // Session (request-response) — runtime PTY management only
   SESSION_CLOSE: 'session:close',
   SESSION_SPAWN: 'session:spawn',
-  SESSION_CREATE_WORKTREE: 'session:createWorktree',
 
   // Resume history
   RESUME_HISTORY_LIST: 'resumeHistory:list',

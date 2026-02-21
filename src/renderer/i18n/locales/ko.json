@@ -59,9 +59,6 @@
   "projectSettings.title": "프로젝트 설정",
   "projectSettings.name": "이름",
   "projectSettings.path": "경로",
-  "projectSettings.worktreeInitScript": "Worktree 초기화 스크립트",
-  "projectSettings.worktreeInitPlaceholder": "예: pnpm install",
-  "projectSettings.worktreeInitDescription": "새 worktree 세션에서 <code>claude</code> 실행 전에 수행됩니다.",
 
   "workspace.noActiveSessions": "활성 세션이 없습니다",
   "workspace.newSession": "새 세션",
@@ -91,10 +88,10 @@
   "contextMenu.timeHourAgo": "{{count}}시간 전",
   "contextMenu.timeDayAgo": "{{count}}일 전",
 
-  "worktreeDialog.title": "Worktree 브랜치 이름",
-  "worktreeDialog.branchRequired": "브랜치 이름이 필요합니다",
-  "worktreeDialog.noSpaces": "브랜치 이름에 공백을 포함할 수 없습니다",
-  "worktreeDialog.invalidChars": "브랜치 이름에 잘못된 문자가 포함되어 있습니다",
+  "worktreeDialog.title": "Worktree 이름",
+  "worktreeDialog.nameRequired": "Worktree 이름이 필요합니다",
+  "worktreeDialog.noSpaces": "Worktree 이름에 공백을 포함할 수 없습니다",
+  "worktreeDialog.invalidChars": "Worktree 이름에 잘못된 문자가 포함되어 있습니다",
 
   "todo.title": "TODO",
   "todo.addTodo": "할 일 추가",

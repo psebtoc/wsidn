@@ -24,11 +24,6 @@ export interface WsidnAPI {
   }
   session: {
     close: (sessionId: string) => Promise<IpcResult<boolean>>
-    createWorktree: (
-      projectId: string,
-      cwd: string,
-      branchName: string
-    ) => Promise<IpcResult<{ worktreePath: string; initScript: string | null }>>
     spawn: (sessionId: string, cwd: string) => Promise<IpcResult<boolean>>
   }
   resumeHistory: {

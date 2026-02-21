@@ -16,7 +16,6 @@ interface SessionContextMenuProps {
   onClose: () => void
   onSelectClaude: () => void
   onSelectClaudeDangerously: () => void
-  onSelectWorktree: () => void
   resumableSessions: ResumableSession[]
   onResume: (claudeSessionId: string) => void
 }
@@ -26,7 +25,6 @@ export default function SessionContextMenu({
   onClose,
   onSelectClaude,
   onSelectClaudeDangerously,
-  onSelectWorktree,
   resumableSessions,
   onResume
 }: SessionContextMenuProps) {
@@ -186,13 +184,6 @@ export default function SessionContextMenu({
           onClick={() => { onSelectClaudeDangerously(); onClose() }}
         >
           claude --skip-permissions
-        </button>
-        <div className="h-px bg-border-default my-1 mx-2" />
-        <button
-          className={itemClass}
-          onClick={() => { onSelectWorktree(); onClose() }}
-        >
-          {t('contextMenu.worktree')}
         </button>
         <div className="h-px bg-border-default my-1 mx-2" />
         <div

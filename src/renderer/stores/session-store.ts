@@ -39,7 +39,7 @@ function nextPaneName(existingPanes: Pane[]): string {
 
 // --- Internal session factory (renderer-only, no IPC) ---
 
-function _createSessionObject(projectId: string, cwd: string, nameOverride?: string): Session {
+function _createSessionObject(projectId: string, cwd: string, nameOverride?: string, worktreeName?: string | null): Session {
   return {
     id: crypto.randomUUID(),
     projectId,
@@ -50,6 +50,7 @@ function _createSessionObject(projectId: string, cwd: string, nameOverride?: str
     claudeModel: null,
     claudeLastTitle: null,
     lastClaudeSessionId: null,
+    worktreeName: worktreeName ?? null,
   }
 }
 
@@ -156,7 +157,7 @@ interface SessionState {
 
   // Session creation with command
   createSessionInPaneWithCommand: (paneId: string, projectId: string, cwd: string, command: string) => Promise<void>
-  createWorktreeSessionInPane: (paneId: string, projectId: string, cwd: string, branchName: string) => Promise<void>
+  createWorktreeSessionInPane: (paneId: string, projectId: string, cwd: string, name: string) => Promise<void>
 }
 
 export const useSessionStore = create<SessionState>((set, get) => ({
@@ -717,12 +718,9 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     })
   },
 
-  createWorktreeSessionInPane: async (paneId, projectId, cwd, branchName) => {
-    const result = await sessionService.createWorktree(projectId, cwd, branchName)
-    const { worktreePath, initScript } = result
-
-    const session = _createSessionObject(projectId, worktreePath, `WT: ${branchName}`)
-    await sessionService.spawn(session.id, worktreePath)
+  createWorktreeSessionInPane: async (paneId, projectId, cwd, name) => {
+    const session = _createSessionObject(projectId, cwd, `WT: ${name}`, name)
+    await sessionService.spawn(session.id, cwd)
 
     const newPanes = get().panes.map((p) => {
       if (p.id !== paneId) return p
@@ -743,8 +741,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       if (sid === session.id) {
         unsub()
         setTimeout(() => {
-          const cmd = initScript ? `${initScript} && claude\n` : 'claude\n'
-          sessionService.terminalInput(session.id, cmd)
+          sessionService.terminalInput(session.id, `claude -w "${name}"\n`)
         }, 100)
       }
     })
