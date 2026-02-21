@@ -66,7 +66,9 @@ contextBridge.exposeInMainWorld('wsidn', {
     create: (input: Record<string, unknown>) => ipcRenderer.invoke('todo:create', input),
     update: (input: Record<string, unknown>) => ipcRenderer.invoke('todo:update', input),
     delete: (projectId: string, sessionId: string, id: string) =>
-      ipcRenderer.invoke('todo:delete', { projectId, sessionId, id })
+      ipcRenderer.invoke('todo:delete', { projectId, sessionId, id }),
+    copyMindTree: (projectId: string, fromSessionId: string, toSessionId: string) =>
+      ipcRenderer.invoke('mindtree:copy', { projectId, fromSessionId, toSessionId }),
   },
 
   template: {

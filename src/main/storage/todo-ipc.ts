@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron'
 import { IPC_CHANNELS } from '@main/ipc/channels'
-import { listTodos, createTodo, updateTodo, deleteTodo } from './todo-storage'
+import { listTodos, createTodo, updateTodo, deleteTodo, copyTodos } from './todo-storage'
 
 export function registerTodoIpc(): void {
   ipcMain.handle(
@@ -68,6 +68,18 @@ export function registerTodoIpc(): void {
     (_event, { projectId, sessionId, id }: { projectId: string; sessionId: string; id: string }) => {
       try {
         deleteTodo(projectId, sessionId, id)
+        return { success: true, data: true }
+      } catch (err) {
+        return { success: false, error: String(err) }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.MINDTREE_COPY,
+    (_event, { projectId, fromSessionId, toSessionId }: { projectId: string; fromSessionId: string; toSessionId: string }) => {
+      try {
+        copyTodos(projectId, fromSessionId, toSessionId)
         return { success: true, data: true }
       } catch (err) {
         return { success: false, error: String(err) }

@@ -30,6 +30,7 @@ export const IPC_CHANNELS = {
   TODO_CREATE: 'todo:create',
   TODO_UPDATE: 'todo:update',
   TODO_DELETE: 'todo:delete',
+  MINDTREE_COPY: 'mindtree:copy',
 
   // Template
   TEMPLATE_LIST: 'template:list',

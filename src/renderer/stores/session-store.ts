@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { sessionService } from '@renderer/services/session-service'
+import { todoService } from '@renderer/services/todo-service'
 import type {
   Session,
   Pane,
@@ -146,7 +147,7 @@ interface SessionState {
   restorePane: (paneId: string) => void
 
   // Claude session binding
-  handleClaudeSessionEvent: (event: ClaudeSessionEvent) => void
+  handleClaudeSessionEvent: (event: ClaudeSessionEvent) => Promise<void>
 
   // Claude activity tracking
   updateClaudeActivity: (sessionId: string, activity: ClaudeActivity | null) => void
@@ -610,7 +611,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     _scheduleSave()
   },
 
-  handleClaudeSessionEvent: (event) => {
+  handleClaudeSessionEvent: async (event) => {
     if (event.source === 'stop') {
       // SessionEnd — Claude session terminated, preserve ID for resume, clear binding
       const session = get().sessions.find((s) => s.id === event.wsidnSessionId)
@@ -647,6 +648,18 @@ export const useSessionStore = create<SessionState>((set, get) => ({
 
     // Ignore start events without a valid Claude session ID
     if (!event.claudeSessionId) return
+
+    // Copy Mind Tree from previous session on clear/startup
+    if (
+      (event.source === 'clear' || event.source === 'startup') &&
+      _currentProjectId
+    ) {
+      const session = get().sessions.find((s) => s.id === event.wsidnSessionId)
+      const prevId = session?.claudeSessionId ?? session?.lastClaudeSessionId
+      if (prevId && prevId !== event.claudeSessionId) {
+        await todoService.copyMindTree(_currentProjectId, prevId, event.claudeSessionId).catch(() => {})
+      }
+    }
 
     const sessions = get().sessions.map((s) =>
       s.id === event.wsidnSessionId

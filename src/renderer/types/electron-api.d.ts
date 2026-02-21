@@ -62,6 +62,7 @@ export interface WsidnAPI {
     create: (input: CreateTodoInput) => Promise<IpcResult<Todo>>
     update: (input: UpdateTodoInput) => Promise<IpcResult<Todo>>
     delete: (projectId: string, sessionId: string, id: string) => Promise<IpcResult<boolean>>
+    copyMindTree: (projectId: string, fromSessionId: string, toSessionId: string) => Promise<IpcResult<boolean>>
   }
   template: {
     list: (projectId: string | null) => Promise<IpcResult<PromptTemplate[]>>

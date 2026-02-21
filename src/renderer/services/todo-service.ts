@@ -14,4 +14,7 @@ export const todoService = {
   async delete(projectId: string, sessionId: string, id: string) {
     return unwrapIpc(await window.wsidn.todo.delete(projectId, sessionId, id))
   },
+  async copyMindTree(projectId: string, fromSessionId: string, toSessionId: string) {
+    return unwrapIpc(await window.wsidn.todo.copyMindTree(projectId, fromSessionId, toSessionId))
+  },
 }

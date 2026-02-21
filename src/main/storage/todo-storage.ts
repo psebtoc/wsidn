@@ -93,6 +93,15 @@ export function updateTodo(input: {
   return updated
 }
 
+export function copyTodos(projectId: string, fromSessionId: string, toSessionId: string): void {
+  const todos = listTodos(projectId, fromSessionId)
+  if (todos.length === 0) return
+  const copied = todos.map((t) => ({ ...t, sessionId: toSessionId }))
+  const destPath = mindtreePath(projectId, toSessionId)
+  ensureDir(join(destPath, '..'))
+  writeJson(destPath, copied)
+}
+
 export function deleteTodo(projectId: string, sessionId: string, id: string): void {
   const todos = listTodos(projectId, sessionId)
 
