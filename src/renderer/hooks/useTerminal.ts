@@ -171,7 +171,12 @@ export function useTerminal(
       scrollback: tc.scrollback,
       windowsPty: {
         backend: 'conpty',
-        buildNumber: 21376,
+        // buildNumber < 21376 disables xterm's internal buffer reflow.
+        // With reflow enabled (>= 21376), xterm rewraps lines AND ConPTY
+        // sends its own repaint — two sources fighting over the buffer →
+        // text duplication on column decrease (window resize, panel toggle).
+        // Disabling reflow lets ConPTY's repaint be the single source of truth.
+        buildNumber: 1,
       },
     })
 
