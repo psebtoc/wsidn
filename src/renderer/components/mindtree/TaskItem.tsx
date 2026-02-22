@@ -1,46 +1,48 @@
 import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ChevronRight, ListChecks, X } from 'lucide-react'
-import { useTodoStore } from '@renderer/stores/todo-store'
-import type { Todo, TodoStatus } from '@renderer/types/project'
+import { useMindTreeStore } from '@renderer/stores/mindtree-store'
+import type { MindTreeItem, MindTreeItemStatus } from '@renderer/types/project'
 import ChecklistItem from './ChecklistItem'
 import Checkbox from '@renderer/components/ui/Checkbox'
 import Tooltip from '@renderer/components/ui/Tooltip'
-import { formatRelativeTime } from '@renderer/utils/format-time'
 
 interface TaskItemProps {
-  todo: Todo
+  item: MindTreeItem
   projectId: string
 }
 
-const STATUS_CYCLE: TodoStatus[] = ['pending', 'in_progress', 'done']
+const STATUS_CYCLE: MindTreeItemStatus[] = ['pending', 'in_progress', 'done']
 
-function todoStatusToCheckbox(status: TodoStatus): 'unchecked' | 'indeterminate' | 'checked' {
+function statusToCheckbox(status: MindTreeItemStatus): 'unchecked' | 'indeterminate' | 'checked' {
   if (status === 'done') return 'checked'
   if (status === 'in_progress') return 'indeterminate'
   return 'unchecked'
 }
 
-function getStatusColor(status: TodoStatus): string {
+function getStatusColor(status: MindTreeItemStatus): string {
   if (status === 'blocked') return 'text-amber-400'
   return ''
 }
 
-export default function TaskItem({ todo, projectId }: TaskItemProps) {
+export default function TaskItem({ item, projectId }: TaskItemProps) {
   const { t } = useTranslation()
-  const todos = useTodoStore((s) => s.todos)
-  const expandedIds = useTodoStore((s) => s.expandedIds)
-  const toggleExpand = useTodoStore((s) => s.toggleExpand)
-  const updateTodo = useTodoStore((s) => s.updateTodo)
-  const removeTodo = useTodoStore((s) => s.removeTodo)
-  const addTodo = useTodoStore((s) => s.addTodo)
+  const items = useMindTreeStore((s) => s.itemsBySession[item.sessionId] ?? [])
+  const expandedIds = useMindTreeStore((s) => s.expandedIds)
+  const toggleExpand = useMindTreeStore((s) => s.toggleExpand)
+  const updateItem = useMindTreeStore((s) => s.updateItem)
+  const removeItem = useMindTreeStore((s) => s.removeItem)
+  const addItem = useMindTreeStore((s) => s.addItem)
   const [addingChecklist, setAddingChecklist] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [editText, setEditText] = useState('')
   const checklistInputRef = useRef<HTMLInputElement>(null)
+  const editRef = useRef<HTMLTextAreaElement>(null)
 
-  const children = todos.filter((t) => t.parentId === todo.id)
+  const children = items.filter((t) => t.parentId === item.id)
   const hasChildren = children.length > 0
-  const isExpanded = expandedIds.has(todo.id)
-  const isDone = todo.status === 'done'
+  const isExpanded = expandedIds.has(item.id)
+  const isDone = item.status === 'done'
 
   useEffect(() => {
     if (addingChecklist) {
@@ -49,19 +51,42 @@ export default function TaskItem({ todo, projectId }: TaskItemProps) {
   }, [addingChecklist])
 
   const handleStatusToggle = () => {
-    // Blocked items → pending when clicked (unblock)
-    if (todo.status === 'blocked') {
-      updateTodo({ id: todo.id, status: 'pending' })
+    // Blocked items -> pending when clicked (unblock)
+    if (item.status === 'blocked') {
+      updateItem({ id: item.id, status: 'pending' })
       return
     }
-    const currentIdx = STATUS_CYCLE.indexOf(todo.status)
+    const currentIdx = STATUS_CYCLE.indexOf(item.status)
     const nextStatus = STATUS_CYCLE[(currentIdx + 1) % STATUS_CYCLE.length]
-    updateTodo({ id: todo.id, status: nextStatus })
+    updateItem({ id: item.id, status: nextStatus })
   }
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation()
-    removeTodo(projectId, todo.sessionId, todo.id)
+    removeItem(projectId, item.sessionId, item.id)
+  }
+
+  useEffect(() => {
+    if (editing && editRef.current) {
+      const el = editRef.current
+      el.style.height = 'auto'
+      el.style.height = el.scrollHeight + 'px'
+      el.focus()
+      el.setSelectionRange(el.value.length, el.value.length)
+    }
+  }, [editing])
+
+  const handleStartEdit = () => {
+    setEditText(item.title)
+    setEditing(true)
+  }
+
+  const handleSaveEdit = () => {
+    const trimmed = editText.trim()
+    if (trimmed && trimmed !== item.title) {
+      updateItem({ id: item.id, title: trimmed })
+    }
+    setEditing(false)
   }
 
   const handleChecklistSubmit = async (text: string) => {
@@ -70,12 +95,12 @@ export default function TaskItem({ todo, projectId }: TaskItemProps) {
       setAddingChecklist(false)
       return
     }
-    await addTodo({
+    await addItem({
       projectId,
-      sessionId: todo.sessionId,
+      sessionId: item.sessionId,
       title: trimmed,
       category: 'task',
-      parentId: todo.id,
+      parentId: item.id,
     })
     // Keep input open for rapid entry, clear value
     if (checklistInputRef.current) {
@@ -87,11 +112,11 @@ export default function TaskItem({ todo, projectId }: TaskItemProps) {
   return (
     <div>
       <div
-        className="group flex items-center gap-1 py-0.5 pr-1 rounded hover:bg-elevated/50 transition-colors"
+        className="group flex items-start gap-1 py-0.5 pr-1 rounded hover:bg-elevated/50 transition-colors"
       >
         {/* Expand/collapse */}
         <button
-          onClick={() => (hasChildren || addingChecklist) && toggleExpand(todo.id)}
+          onClick={() => (hasChildren || addingChecklist) && toggleExpand(item.id)}
           className={`w-4 h-4 flex items-center justify-center text-fg-dim ${
             hasChildren || addingChecklist ? 'hover:text-fg-secondary cursor-pointer' : 'cursor-default opacity-0'
           }`}
@@ -105,71 +130,92 @@ export default function TaskItem({ todo, projectId }: TaskItemProps) {
         </button>
 
         {/* Status checkbox */}
-        <Tooltip content={todo.status} side="top">
-          {todo.status === 'blocked' ? (
+        <Tooltip content={item.status} side="top">
+          {item.status === 'blocked' ? (
             <button
               onClick={handleStatusToggle}
               className="w-3.5 h-3.5 flex items-center justify-center text-amber-400 shrink-0"
               title="blocked — click to unblock"
             >
-              <span className="text-[10px] leading-none">⊘</span>
+              <span className="text-[10px] leading-none">{'\u2298'}</span>
             </button>
           ) : (
             <Checkbox
-              state={todoStatusToCheckbox(todo.status)}
+              state={statusToCheckbox(item.status)}
               onChange={handleStatusToggle}
             />
           )}
         </Tooltip>
 
         {/* Title */}
-        <span
-          className={`flex-1 text-xs truncate ${
-            isDone
-              ? 'line-through text-fg-dim'
-              : todo.status === 'blocked'
-                ? getStatusColor(todo.status)
-                : 'text-fg-secondary'
-          }`}
-        >
-          {todo.title}
-        </span>
-
-        {/* Time */}
-        <span className="text-[9px] text-fg-dimmer shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-          {formatRelativeTime(todo.createdAt, t)}
-        </span>
-
-        {/* Add checklist button */}
-        <Tooltip content={t('todo.addChecklist')} side="top">
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              setAddingChecklist(true)
-              if (!isExpanded) toggleExpand(todo.id)
+        {editing ? (
+          <textarea
+            ref={editRef}
+            value={editText}
+            onChange={(e) => {
+              setEditText(e.target.value)
+              e.target.style.height = 'auto'
+              e.target.style.height = e.target.scrollHeight + 'px'
             }}
-            className="opacity-0 group-hover:opacity-100 w-4 h-4 flex items-center justify-center
-                       text-fg-dim hover:text-fg-secondary transition-opacity"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                handleSaveEdit()
+              }
+              if (e.key === 'Escape') setEditing(false)
+            }}
+            onBlur={handleSaveEdit}
+            className="flex-1 text-xs text-fg-secondary bg-transparent border-b border-primary
+                       outline-none resize-none overflow-hidden min-w-0"
+            rows={1}
+          />
+        ) : (
+          <span
+            onDoubleClick={handleStartEdit}
+            className={`flex-1 text-xs whitespace-pre-wrap break-words min-w-0 ${
+              isDone
+                ? 'line-through text-fg-dim'
+                : item.status === 'blocked'
+                  ? getStatusColor(item.status)
+                  : 'text-fg-secondary'
+            }`}
           >
-            <ListChecks size={10} />
-          </button>
-        </Tooltip>
+            {item.title}
+          </span>
+        )}
 
-        {/* Delete button */}
-        <Tooltip content={t('common.delete')} side="top">
-          <button
-            onClick={handleDelete}
-            className="opacity-0 group-hover:opacity-100 w-4 h-4 flex items-center justify-center
-                       text-fg-dim hover:text-red-400 transition-opacity"
-          >
-            <X size={10} />
-          </button>
-        </Tooltip>
+        {/* Action buttons — hidden during edit */}
+        {!editing && (
+          <>
+            <Tooltip content={t('mindtree.addChecklist')} side="top">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setAddingChecklist(true)
+                  if (!isExpanded) toggleExpand(item.id)
+                }}
+                className="opacity-0 group-hover:opacity-100 w-4 h-4 flex items-center justify-center shrink-0
+                           text-fg-dim hover:text-fg-secondary transition-opacity"
+              >
+                <ListChecks size={10} />
+              </button>
+            </Tooltip>
+            <Tooltip content={t('common.delete')} side="top">
+              <button
+                onClick={handleDelete}
+                className="opacity-0 group-hover:opacity-100 w-4 h-4 flex items-center justify-center shrink-0
+                           text-fg-dim hover:text-red-400 transition-opacity"
+              >
+                <X size={10} />
+              </button>
+            </Tooltip>
+          </>
+        )}
       </div>
 
       {/* Checklist children */}
       {isExpanded && children.map((child) => (
-        <ChecklistItem key={child.id} todo={child} projectId={projectId} />
+        <ChecklistItem key={child.id} item={child} projectId={projectId} />
       ))}
 
       {/* Inline checklist input */}
@@ -194,7 +240,7 @@ export default function TaskItem({ todo, projectId }: TaskItemProps) {
               }
               setAddingChecklist(false)
             }}
-            placeholder={t('todo.newChecklistItem')}
+            placeholder={t('mindtree.newChecklistItem')}
             className="w-full bg-elevated border border-border-input rounded px-2 py-0.5 text-[11px] text-fg
                        placeholder-fg-dim outline-none focus:border-primary transition-colors"
           />

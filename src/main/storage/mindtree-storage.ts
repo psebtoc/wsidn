@@ -3,15 +3,15 @@ import { v4 as uuid } from 'uuid'
 import { getAppDataPath, readJson, writeJson, ensureDir } from './storage-manager'
 
 type MindTreeCategory = 'task' | 'decision' | 'note'
-type TodoStatus = 'pending' | 'in_progress' | 'done' | 'blocked'
+type MindTreeItemStatus = 'pending' | 'in_progress' | 'done' | 'blocked'
 
-interface Todo {
+interface MindTreeItem {
   id: string
   sessionId: string
   category: MindTreeCategory
   title: string
   description: string
-  status: TodoStatus
+  status: MindTreeItemStatus
   priority: 'low' | 'medium' | 'high'
   parentId: string | null
   order: number
@@ -23,13 +23,15 @@ function mindtreePath(projectId: string, sessionId: string): string {
   return getAppDataPath('projects', projectId, 'mindtree', `${sessionId}.json`)
 }
 
-export function listTodos(projectId: string, sessionId: string): Todo[] {
-  const todos = readJson<Todo[]>(mindtreePath(projectId, sessionId), [])
+/** List all Mind Tree items for the given project/session. */
+export function listItems(projectId: string, sessionId: string): MindTreeItem[] {
+  const items = readJson<MindTreeItem[]>(mindtreePath(projectId, sessionId), [])
   // Migration fallback: existing items without category default to 'task'
-  return todos.map((t) => ({ ...t, category: t.category ?? 'task' }))
+  return items.map((item) => ({ ...item, category: item.category ?? 'task' }))
 }
 
-export function createTodo(input: {
+/** Create a new Mind Tree item. */
+export function createItem(input: {
   projectId: string
   sessionId: string
   title: string
@@ -37,13 +39,13 @@ export function createTodo(input: {
   description?: string
   priority?: 'low' | 'medium' | 'high'
   parentId?: string | null
-}): Todo {
+}): MindTreeItem {
   const filePath = mindtreePath(input.projectId, input.sessionId)
   ensureDir(join(filePath, '..'))
-  const todos = listTodos(input.projectId, input.sessionId)
+  const items = listItems(input.projectId, input.sessionId)
   const now = new Date().toISOString()
 
-  const todo: Todo = {
+  const item: MindTreeItem = {
     id: uuid(),
     sessionId: input.sessionId,
     category: input.category ?? 'task',
@@ -52,33 +54,34 @@ export function createTodo(input: {
     status: 'pending',
     priority: input.priority ?? 'medium',
     parentId: input.parentId ?? null,
-    order: todos.length,
+    order: items.length,
     createdAt: now,
     updatedAt: now,
   }
 
-  todos.push(todo)
-  writeJson(filePath, todos)
-  return todo
+  items.push(item)
+  writeJson(filePath, items)
+  return item
 }
 
-export function updateTodo(input: {
+/** Update an existing Mind Tree item by id. */
+export function updateItem(input: {
   id: string
   projectId: string
   sessionId: string
   title?: string
   description?: string
-  status?: TodoStatus
+  status?: MindTreeItemStatus
   priority?: 'low' | 'medium' | 'high'
   parentId?: string | null
   order?: number
-}): Todo {
-  const todos = listTodos(input.projectId, input.sessionId)
-  const idx = todos.findIndex((t) => t.id === input.id)
-  if (idx === -1) throw new Error(`Todo not found: ${input.id}`)
+}): MindTreeItem {
+  const items = listItems(input.projectId, input.sessionId)
+  const idx = items.findIndex((item) => item.id === input.id)
+  if (idx === -1) throw new Error(`MindTreeItem not found: ${input.id}`)
 
-  const existing = todos[idx]
-  const updated: Todo = {
+  const existing = items[idx]
+  const updated: MindTreeItem = {
     ...existing,
     ...(input.title !== undefined && { title: input.title }),
     ...(input.description !== undefined && { description: input.description }),
@@ -89,53 +92,54 @@ export function updateTodo(input: {
     updatedAt: new Date().toISOString(),
   }
 
-  todos[idx] = updated
-  writeJson(mindtreePath(input.projectId, input.sessionId), todos)
+  items[idx] = updated
+  writeJson(mindtreePath(input.projectId, input.sessionId), items)
   return updated
 }
 
-export function copyTodos(projectId: string, fromSessionId: string, toSessionId: string): void {
-  const todos = listTodos(projectId, fromSessionId)
-  if (todos.length === 0) return
-  const copied = todos.map((t) => ({ ...t, sessionId: toSessionId }))
+/** Copy all Mind Tree items from one session to another. */
+export function copyItems(projectId: string, fromSessionId: string, toSessionId: string): void {
+  const items = listItems(projectId, fromSessionId)
+  if (items.length === 0) return
+  const copied = items.map((item) => ({ ...item, sessionId: toSessionId }))
   const destPath = mindtreePath(projectId, toSessionId)
   ensureDir(join(destPath, '..'))
   writeJson(destPath, copied)
 }
 
 /**
- * Replaces all task and decision todos for a session with new ones from the Session Manager.
- * Note todos are preserved. Single atomic write.
+ * Replaces all task and decision items for a session with new ones from the Session Manager.
+ * Note items are preserved. Single atomic write.
  */
 export function replaceTasksAndDecisions(
   projectId: string,
   sessionId: string,
   tasks: Array<{
     title: string
-    status?: TodoStatus
+    status?: MindTreeItemStatus
     blockedReason?: string | null
     checklist?: string[]
   }>,
   decisions: Array<{ title: string }>
-): Todo[] {
+): MindTreeItem[] {
   const filePath = mindtreePath(projectId, sessionId)
   ensureDir(join(filePath, '..'))
 
   // Keep notes, replace everything else
-  const existing = listTodos(projectId, sessionId)
-  const notes = existing.filter((t) => t.category === 'note')
+  const existing = listItems(projectId, sessionId)
+  const notes = existing.filter((item) => item.category === 'note')
 
   const now = new Date().toISOString()
-  const newTodos: Todo[] = [...notes]
+  const newItems: MindTreeItem[] = [...notes]
   let order = notes.length
 
   for (const task of tasks) {
     const taskId = uuid()
-    const status: TodoStatus =
+    const status: MindTreeItemStatus =
       task.status === 'blocked' || task.status === 'in_progress' || task.status === 'done'
         ? task.status
         : 'pending'
-    newTodos.push({
+    newItems.push({
       id: taskId,
       sessionId,
       category: 'task',
@@ -148,12 +152,12 @@ export function replaceTasksAndDecisions(
       createdAt: now,
       updatedAt: now,
     })
-    for (const item of task.checklist ?? []) {
-      newTodos.push({
+    for (const checkItem of task.checklist ?? []) {
+      newItems.push({
         id: uuid(),
         sessionId,
         category: 'task',
-        title: item,
+        title: checkItem,
         description: '',
         status: 'pending',
         priority: 'medium',
@@ -166,7 +170,7 @@ export function replaceTasksAndDecisions(
   }
 
   for (const decision of decisions) {
-    newTodos.push({
+    newItems.push({
       id: uuid(),
       sessionId,
       category: 'decision',
@@ -181,25 +185,26 @@ export function replaceTasksAndDecisions(
     })
   }
 
-  writeJson(filePath, newTodos)
-  return newTodos
+  writeJson(filePath, newItems)
+  return newItems
 }
 
-export function deleteTodo(projectId: string, sessionId: string, id: string): void {
-  const todos = listTodos(projectId, sessionId)
+/** Delete a Mind Tree item and all its descendants. */
+export function deleteItem(projectId: string, sessionId: string, id: string): void {
+  const items = listItems(projectId, sessionId)
 
   // Collect IDs to delete (target + all descendants)
   const toDelete = new Set<string>()
   function collectChildren(parentId: string): void {
     toDelete.add(parentId)
-    for (const t of todos) {
-      if (t.parentId === parentId) {
-        collectChildren(t.id)
+    for (const item of items) {
+      if (item.parentId === parentId) {
+        collectChildren(item.id)
       }
     }
   }
   collectChildren(id)
 
-  const remaining = todos.filter((t) => !toDelete.has(t.id))
+  const remaining = items.filter((item) => !toDelete.has(item.id))
   writeJson(mindtreePath(projectId, sessionId), remaining)
 }

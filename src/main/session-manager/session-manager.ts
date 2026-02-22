@@ -5,7 +5,7 @@ import { existsSync, readFileSync, writeFileSync, unlinkSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { IPC_CHANNELS } from '@main/ipc/channels'
-import { listTodos, replaceTasksAndDecisions } from '@main/storage/todo-storage'
+import { listItems, replaceTasksAndDecisions } from '@main/storage/mindtree-storage'
 import { getAppDataPath, readJson } from '@main/storage/storage-manager'
 
 interface SessionInfo {
@@ -145,12 +145,12 @@ class SessionManager {
   private buildInputText(prompts: string[], claudeSessionId: string, projectId: string): string {
     const promptList = prompts.map((p, i) => `${i + 1}. ${p}`).join('\n')
 
-    const todos = listTodos(projectId, claudeSessionId)
-    const tasks = todos.filter((t) => t.category === 'task' && !t.parentId)
-    const decisions = todos.filter((t) => t.category === 'decision')
+    const items = listItems(projectId, claudeSessionId)
+    const tasks = items.filter((t) => t.category === 'task' && !t.parentId)
+    const decisions = items.filter((t) => t.category === 'decision')
 
     const taskLines = tasks.map((t) => {
-      const children = todos.filter((c) => c.parentId === t.id)
+      const children = items.filter((c) => c.parentId === t.id)
       const childLines = children.map((c) => `    - ${c.title}`).join('\n')
       const statusStr = t.status === 'blocked' ? `[blocked: ${t.description || '?'}]` : `[${t.status}]`
       return childLines

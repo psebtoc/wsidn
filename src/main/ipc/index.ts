@@ -2,7 +2,7 @@ import { ipcMain, BrowserWindow } from 'electron'
 import { IPC_CHANNELS } from '@main/ipc/channels'
 import { registerPtyIpc } from '@main/pty/pty-ipc'
 import { registerStorageIpc } from '@main/storage/storage-ipc'
-import { registerTodoIpc } from '@main/storage/todo-ipc'
+import { registerMindTreeIpc } from '@main/storage/mindtree-ipc'
 import { registerTemplateIpc } from '@main/storage/template-ipc'
 import { registerSessionManagerIpc } from '@main/session-manager/session-manager-ipc'
 
@@ -28,7 +28,7 @@ function registerWindowIpc(): void {
 
 export function registerAllIpc(): void {
   registerStorageIpc()
-  registerTodoIpc()
+  registerMindTreeIpc()
   registerTemplateIpc()
   registerPtyIpc()
   registerWindowIpc()

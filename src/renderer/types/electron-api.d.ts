@@ -3,9 +3,9 @@ import type {
   Project,
   Session,
   AppConfig,
-  Todo,
-  CreateTodoInput,
-  UpdateTodoInput,
+  MindTreeItem,
+  CreateMindTreeItemInput,
+  UpdateMindTreeItemInput,
   PromptTemplate,
   CreateTemplateInput,
   UpdateTemplateInput,
@@ -57,12 +57,12 @@ export interface WsidnAPI {
     onOutput: (callback: (sessionId: string, data: string) => void) => () => void
     onExit: (callback: (sessionId: string, exitCode: number) => void) => () => void
   }
-  todo: {
-    list: (projectId: string, sessionId: string) => Promise<IpcResult<Todo[]>>
-    create: (input: CreateTodoInput) => Promise<IpcResult<Todo>>
-    update: (input: UpdateTodoInput) => Promise<IpcResult<Todo>>
+  mindtree: {
+    list: (projectId: string, sessionId: string) => Promise<IpcResult<MindTreeItem[]>>
+    create: (input: CreateMindTreeItemInput) => Promise<IpcResult<MindTreeItem>>
+    update: (input: UpdateMindTreeItemInput) => Promise<IpcResult<MindTreeItem>>
     delete: (projectId: string, sessionId: string, id: string) => Promise<IpcResult<boolean>>
-    copyMindTree: (projectId: string, fromSessionId: string, toSessionId: string) => Promise<IpcResult<boolean>>
+    copy: (projectId: string, fromSessionId: string, toSessionId: string) => Promise<IpcResult<boolean>>
   }
   template: {
     list: (projectId: string | null) => Promise<IpcResult<PromptTemplate[]>>

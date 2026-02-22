@@ -60,14 +60,14 @@ contextBridge.exposeInMainWorld('wsidn', {
     }
   },
 
-  todo: {
+  mindtree: {
     list: (projectId: string, sessionId: string) =>
-      ipcRenderer.invoke('todo:list', { projectId, sessionId }),
-    create: (input: Record<string, unknown>) => ipcRenderer.invoke('todo:create', input),
-    update: (input: Record<string, unknown>) => ipcRenderer.invoke('todo:update', input),
+      ipcRenderer.invoke('mindtree:list', { projectId, sessionId }),
+    create: (input: Record<string, unknown>) => ipcRenderer.invoke('mindtree:create', input),
+    update: (input: Record<string, unknown>) => ipcRenderer.invoke('mindtree:update', input),
     delete: (projectId: string, sessionId: string, id: string) =>
-      ipcRenderer.invoke('todo:delete', { projectId, sessionId, id }),
-    copyMindTree: (projectId: string, fromSessionId: string, toSessionId: string) =>
+      ipcRenderer.invoke('mindtree:delete', { projectId, sessionId, id }),
+    copy: (projectId: string, fromSessionId: string, toSessionId: string) =>
       ipcRenderer.invoke('mindtree:copy', { projectId, fromSessionId, toSessionId }),
   },
 

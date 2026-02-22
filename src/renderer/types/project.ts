@@ -67,41 +67,41 @@ export interface AppConfig {
 // --- Mind Tree ---
 
 export type MindTreeCategory = 'task' | 'decision' | 'note'
-export type TodoStatus = 'pending' | 'in_progress' | 'done' | 'blocked'
-export type TodoPriority = 'low' | 'medium' | 'high'
+export type MindTreeItemStatus = 'pending' | 'in_progress' | 'done' | 'blocked'
+export type MindTreeItemPriority = 'low' | 'medium' | 'high'
 
-export interface Todo {
+export interface MindTreeItem {
   id: string
   sessionId: string
   category: MindTreeCategory
   title: string
   description: string
-  status: TodoStatus
-  priority: TodoPriority
+  status: MindTreeItemStatus
+  priority: MindTreeItemPriority
   parentId: string | null
   order: number
   createdAt: string
   updatedAt: string
 }
 
-export interface CreateTodoInput {
+export interface CreateMindTreeItemInput {
   projectId: string
   sessionId: string
   title: string
   category?: MindTreeCategory
   description?: string
-  priority?: TodoPriority
+  priority?: MindTreeItemPriority
   parentId?: string | null
 }
 
-export interface UpdateTodoInput {
+export interface UpdateMindTreeItemInput {
   id: string
   projectId?: string
   sessionId?: string
   title?: string
   description?: string
-  status?: TodoStatus
-  priority?: TodoPriority
+  status?: MindTreeItemStatus
+  priority?: MindTreeItemPriority
   parentId?: string | null
   order?: number
 }

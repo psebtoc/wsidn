@@ -13,6 +13,7 @@ import { calculateBounds, collectDividers } from '@renderer/utils/split-utils'
 import type { SplitDirection } from '@renderer/types/project'
 import type { PaneBounds, CalculateBoundsOptions } from '@renderer/utils/split-utils'
 
+
 interface DragState {
   path: string
   direction: SplitDirection

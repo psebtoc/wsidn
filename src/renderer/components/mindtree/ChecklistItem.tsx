@@ -1,28 +1,28 @@
 import { useTranslation } from 'react-i18next'
 import { X } from 'lucide-react'
-import { useTodoStore } from '@renderer/stores/todo-store'
-import type { Todo } from '@renderer/types/project'
+import { useMindTreeStore } from '@renderer/stores/mindtree-store'
+import type { MindTreeItem } from '@renderer/types/project'
 import Tooltip from '@renderer/components/ui/Tooltip'
 
 interface ChecklistItemProps {
-  todo: Todo
+  item: MindTreeItem
   projectId: string
 }
 
-export default function ChecklistItem({ todo, projectId }: ChecklistItemProps) {
+export default function ChecklistItem({ item, projectId }: ChecklistItemProps) {
   const { t } = useTranslation()
-  const updateTodo = useTodoStore((s) => s.updateTodo)
-  const removeTodo = useTodoStore((s) => s.removeTodo)
+  const updateItem = useMindTreeStore((s) => s.updateItem)
+  const removeItem = useMindTreeStore((s) => s.removeItem)
 
-  const isDone = todo.status === 'done'
+  const isDone = item.status === 'done'
 
   const handleToggle = () => {
-    updateTodo({ id: todo.id, status: isDone ? 'pending' : 'done' })
+    updateItem({ id: item.id, status: isDone ? 'pending' : 'done' })
   }
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation()
-    removeTodo(projectId, todo.sessionId, todo.id)
+    removeItem(projectId, item.sessionId, item.id)
   }
 
   return (
@@ -47,7 +47,7 @@ export default function ChecklistItem({ todo, projectId }: ChecklistItemProps) {
           isDone ? 'line-through text-fg-dimmer' : 'text-fg-muted'
         }`}
       >
-        {todo.title}
+        {item.title}
       </span>
 
       {/* Delete */}

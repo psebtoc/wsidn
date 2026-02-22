@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { sessionService } from '@renderer/services/session-service'
-import { todoService } from '@renderer/services/todo-service'
+import { mindtreeService } from '@renderer/services/mindtree-service'
 import type {
   Session,
   Pane,
@@ -663,7 +663,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       const session = get().sessions.find((s) => s.id === event.wsidnSessionId)
       const prevId = session?.claudeSessionId ?? session?.lastClaudeSessionId
       if (prevId && prevId !== event.claudeSessionId) {
-        await todoService.copyMindTree(_currentProjectId, prevId, event.claudeSessionId).catch(() => {})
+        await mindtreeService.copy(_currentProjectId, prevId, event.claudeSessionId).catch(() => {})
       }
     }
 

@@ -1,6 +1,6 @@
 import { useRef, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useTodoStore } from '@renderer/stores/todo-store'
+import { useMindTreeStore } from '@renderer/stores/mindtree-store'
 import type { MindTreeCategory } from '@renderer/types/project'
 
 interface CreateInputProps {
@@ -15,7 +15,7 @@ export default function CreateInput({ projectId, sessionId, category, parentId, 
   const { t } = useTranslation()
   const inputRef = useRef<HTMLInputElement>(null)
   const editableRef = useRef<HTMLDivElement>(null)
-  const addTodo = useTodoStore((s) => s.addTodo)
+  const addItem = useMindTreeStore((s) => s.addItem)
   const submittedRef = useRef(false)
 
   const isContentEditable = category === 'decision'
@@ -36,9 +36,9 @@ export default function CreateInput({ projectId, sessionId, category, parentId, 
       return
     }
     submittedRef.current = true
-    await addTodo({ projectId, sessionId, title: trimmed, category, parentId: parentId ?? null })
+    await addItem({ projectId, sessionId, title: trimmed, category, parentId: parentId ?? null })
     onDone()
-  }, [projectId, sessionId, category, parentId, addTodo, onDone])
+  }, [projectId, sessionId, category, parentId, addItem, onDone])
 
   const placeholderKey =
     category === 'task'

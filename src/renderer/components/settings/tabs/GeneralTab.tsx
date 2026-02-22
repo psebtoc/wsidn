@@ -23,14 +23,12 @@ export default function GeneralTab({ language, defaultShell, onLanguageChange, o
         <Select
           fullWidth
           value={language}
-          onChange={(e) => onLanguageChange(e.target.value as AppConfig['language'])}
-        >
-          {(['ko', 'en'] as const).map((lang) => (
-            <option key={lang} value={lang}>
-              {t(`settings.lang.${lang}`)}
-            </option>
-          ))}
-        </Select>
+          onChange={(val) => onLanguageChange(val as AppConfig['language'])}
+          options={(['ko', 'en'] as const).map((lang) => ({
+            value: lang,
+            label: t(`settings.lang.${lang}`),
+          }))}
+        />
         <p className="text-xs text-fg-dim mt-1">
           {t('settings.languageDescription')}
         </p>

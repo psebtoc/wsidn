@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ChevronRight, Plus } from 'lucide-react'
-import type { MindTreeCategory, Todo } from '@renderer/types/project'
+import type { MindTreeCategory, MindTreeItem } from '@renderer/types/project'
 import TaskItem from './TaskItem'
 import DecisionItem from './DecisionItem'
 import CreateInput from './CreateInput'
@@ -9,7 +9,7 @@ import Tooltip from '@renderer/components/ui/Tooltip'
 
 interface MindTreeSectionProps {
   category: MindTreeCategory
-  items: Todo[]
+  items: MindTreeItem[]
   projectId: string
   sessionId: string
   collapsed: boolean
@@ -82,8 +82,8 @@ export default function MindTreeSection({
             </p>
           ) : (
             rootItems.map((item) => {
-              if (category === 'task') return <TaskItem key={item.id} todo={item} projectId={projectId} />
-              return <DecisionItem key={item.id} todo={item} projectId={projectId} />
+              if (category === 'task') return <TaskItem key={item.id} item={item} projectId={projectId} />
+              return <DecisionItem key={item.id} item={item} projectId={projectId} />
             })
           )}
           {showCreate && (

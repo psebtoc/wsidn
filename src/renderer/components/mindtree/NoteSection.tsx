@@ -1,11 +1,11 @@
 import { useRef, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ChevronRight } from 'lucide-react'
-import { useTodoStore } from '@renderer/stores/todo-store'
-import type { Todo } from '@renderer/types/project'
+import { useMindTreeStore } from '@renderer/stores/mindtree-store'
+import type { MindTreeItem } from '@renderer/types/project'
 
 interface NoteSectionProps {
-  noteItem: Todo | null
+  noteItem: MindTreeItem | null
   projectId: string
   sessionId: string
   collapsed: boolean
@@ -16,8 +16,8 @@ const SECTION_COLOR = 'text-green-400'
 
 export default function NoteSection({ noteItem, projectId, sessionId, collapsed, onToggleCollapse }: NoteSectionProps) {
   const { t } = useTranslation()
-  const addTodo = useTodoStore((s) => s.addTodo)
-  const updateTodo = useTodoStore((s) => s.updateTodo)
+  const addItem = useMindTreeStore((s) => s.addItem)
+  const updateItem = useMindTreeStore((s) => s.updateItem)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [localValue, setLocalValue] = useState(noteItem?.description ?? '')
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -35,10 +35,10 @@ export default function NoteSection({ noteItem, projectId, sessionId, collapsed,
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     saveTimerRef.current = setTimeout(async () => {
       if (noteItem) {
-        updateTodo({ id: noteItem.id, description: value })
+        updateItem({ id: noteItem.id, description: value })
       } else {
         // Create the note item on first edit
-        await addTodo({ projectId, sessionId, title: 'note', category: 'note', description: value })
+        await addItem({ projectId, sessionId, title: 'note', category: 'note', description: value })
       }
     }, 500)
   }

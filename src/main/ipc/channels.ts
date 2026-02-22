@@ -25,11 +25,11 @@ export const IPC_CHANNELS = {
   CONFIG_GET: 'config:get',
   CONFIG_SET: 'config:set',
 
-  // TODO
-  TODO_LIST: 'todo:list',
-  TODO_CREATE: 'todo:create',
-  TODO_UPDATE: 'todo:update',
-  TODO_DELETE: 'todo:delete',
+  // Mind Tree
+  MINDTREE_LIST: 'mindtree:list',
+  MINDTREE_CREATE: 'mindtree:create',
+  MINDTREE_UPDATE: 'mindtree:update',
+  MINDTREE_DELETE: 'mindtree:delete',
   MINDTREE_COPY: 'mindtree:copy',
 
   // Template

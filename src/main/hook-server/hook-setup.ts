@@ -1,9 +1,10 @@
 import { existsSync, writeFileSync, readFileSync } from 'fs'
 import { join } from 'path'
 import { homedir } from 'os'
+import { app } from 'electron'
 import { getAppDataPath, ensureDir } from '@main/storage/storage-manager'
 
-const HOOK_FILENAME = 'wsidn-session-hook.mjs'
+const HOOK_FILENAME = app.isPackaged ? 'wsidn-session-hook.mjs' : 'wsidn-dev-session-hook.mjs'
 
 /**
  * Creates the hook script at %APPDATA%/wsidn/hooks/wsidn-session-hook.mjs.

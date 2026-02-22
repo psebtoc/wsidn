@@ -1,11 +1,12 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Zap, Loader2 } from 'lucide-react'
-import { useTodoStore } from '@renderer/stores/todo-store'
+import { useMindTreeStore } from '@renderer/stores/mindtree-store'
 import { useSessionStore } from '@renderer/stores/session-store'
 import { useConfigStore } from '@renderer/stores/config-store'
 import { sessionService } from '@renderer/services/session-service'
 import type { MindTreeCategory } from '@renderer/types/project'
+import Select from '@renderer/components/ui/Select'
 import Tooltip from '@renderer/components/ui/Tooltip'
 import MindTreeSection from './MindTreeSection'
 import NoteSection from './NoteSection'
@@ -22,9 +23,9 @@ const HEADER_HEIGHT = 28 // section header height in px
 
 export default function MindTreePanel({ projectId, sessionId, wsidnSessionId, cwd }: MindTreePanelProps) {
   const { t } = useTranslation()
-  const todos = useTodoStore((s) => s.todos)
-  const loading = useTodoStore((s) => s.loading)
-  const loadTodos = useTodoStore((s) => s.loadTodos)
+  const items = useMindTreeStore((s) => s.itemsBySession[sessionId] ?? [])
+  const loading = useMindTreeStore((s) => s.loadingBySession[sessionId] ?? false)
+  const loadItems = useMindTreeStore((s) => s.loadItems)
 
   const sessionManagerEnabled = useSessionStore((s) => s.sessionManagerEnabled[wsidnSessionId] ?? false)
   const toggleSessionManager = useSessionStore((s) => s.toggleSessionManager)
@@ -42,8 +43,8 @@ export default function MindTreePanel({ projectId, sessionId, wsidnSessionId, cw
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    loadTodos(projectId, sessionId)
-  }, [projectId, sessionId, loadTodos])
+    loadItems(projectId, sessionId)
+  }, [projectId, sessionId, loadItems])
 
   // Subscribe to SESSION_MANAGER_PROCESSING events — show spinner while claude -p runs
   useEffect(() => {
@@ -59,10 +60,10 @@ export default function MindTreePanel({ projectId, sessionId, wsidnSessionId, cw
     return sessionService.onSessionManagerUpdated((payload) => {
       if (payload.projectId === projectId && payload.claudeSessionId === sessionId) {
         setSmProcessing(false)
-        loadTodos(projectId, sessionId)
+        loadItems(projectId, sessionId)
       }
     })
-  }, [projectId, sessionId, loadTodos])
+  }, [projectId, sessionId, loadItems])
 
   // Track processing state: set to true when prompt is submitted (use a brief spinner)
   // We watch the SESSION_MANAGER_UPDATED event to clear it (done above)
@@ -86,13 +87,13 @@ export default function MindTreePanel({ projectId, sessionId, wsidnSessionId, cw
   )
 
   const itemsByCategory = useMemo(() => {
-    const map: Record<MindTreeCategory, typeof todos> = { task: [], decision: [], note: [] }
-    for (const todo of todos) {
-      const cat = todo.category ?? 'task'
-      if (map[cat]) map[cat].push(todo)
+    const map: Record<MindTreeCategory, typeof items> = { task: [], decision: [], note: [] }
+    for (const item of items) {
+      const cat = item.category ?? 'task'
+      if (map[cat]) map[cat].push(item)
     }
     return map
-  }, [todos])
+  }, [items])
 
   const toggleCollapse = useCallback((category: MindTreeCategory) => {
     setCollapsedSet((prev) => {
@@ -222,28 +223,30 @@ export default function MindTreePanel({ projectId, sessionId, wsidnSessionId, cw
   return (
     <div className="w-64 h-full bg-surface border-l border-border-default/50 flex flex-col select-none shrink-0">
       {/* Header */}
-      <div className="px-3 py-1.5 border-b border-border-subtle flex items-center gap-1.5">
+      <div className="px-3 h-8 border-b border-border-subtle flex items-center gap-1.5">
         <span className="text-xs font-medium text-fg-secondary uppercase tracking-wider flex-1">
           {t('mindtree.title')}
         </span>
 
-        {/* Model dropdown */}
-        <select
-          value={model}
-          onChange={(e) => handleModelChange(e.target.value as 'haiku' | 'sonnet' | 'opus')}
-          className="text-[10px] bg-elevated border border-border-input rounded px-1 py-0.5 text-fg-dim
-                     outline-none focus:border-primary transition-colors cursor-pointer"
-          title={t('mindtree.selectModel')}
-        >
-          <option value="haiku">haiku</option>
-          <option value="sonnet">sonnet</option>
-          <option value="opus">opus</option>
-        </select>
+        {/* Model dropdown — visible only when SM is active */}
+        {sessionManagerEnabled && (
+          <Select
+            size="sm"
+            value={model}
+            onChange={(val) => handleModelChange(val as 'haiku' | 'sonnet' | 'opus')}
+            options={[
+              { value: 'haiku', label: 'haiku' },
+              { value: 'sonnet', label: 'sonnet' },
+              { value: 'opus', label: 'opus' },
+            ]}
+            className="bg-elevated text-fg-dim"
+          />
+        )}
 
         {/* Session Manager toggle */}
         <Tooltip content={sessionManagerEnabled ? t('mindtree.smDisable') : t('mindtree.smEnable')} side="bottom">
           <button
-            onClick={handleToggle}
+            onClick={() => handleToggle()}
             className={`w-6 h-6 flex items-center justify-center rounded transition-colors ${
               sessionManagerEnabled
                 ? 'bg-primary/20 text-primary'

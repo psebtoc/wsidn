@@ -93,14 +93,6 @@
   "worktreeDialog.noSpaces": "Worktree name cannot contain spaces",
   "worktreeDialog.invalidChars": "Worktree name contains invalid characters",
 
-  "todo.title": "TODO",
-  "todo.addTodo": "Add todo",
-  "todo.noTodos": "No todos yet",
-  "todo.newTodoPlaceholder": "New todo...",
-  "todo.addSubTodo": "Add sub-todo",
-  "todo.addChecklist": "Add checklist",
-  "todo.newChecklistItem": "Completion criteria...",
-
   "mindtree.title": "Mind Tree",
   "mindtree.task": "Task",
   "mindtree.decision": "Decision",
@@ -110,6 +102,8 @@
   "mindtree.newTask": "New task...",
   "mindtree.newDecision": "New decision...",
   "mindtree.newNote": "New note...",
+  "mindtree.addChecklist": "Add checklist",
+  "mindtree.newChecklistItem": "Completion criteria...",
   "mindtree.smEnable": "Enable Session Manager",
   "mindtree.smDisable": "Disable Session Manager",
   "mindtree.selectModel": "Select model",

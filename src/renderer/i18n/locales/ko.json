@@ -93,14 +93,6 @@
   "worktreeDialog.noSpaces": "Worktree 이름에 공백을 포함할 수 없습니다",
   "worktreeDialog.invalidChars": "Worktree 이름에 잘못된 문자가 포함되어 있습니다",
 
-  "todo.title": "TODO",
-  "todo.addTodo": "할 일 추가",
-  "todo.noTodos": "할 일이 없습니다",
-  "todo.newTodoPlaceholder": "새 할 일...",
-  "todo.addSubTodo": "하위 할 일 추가",
-  "todo.addChecklist": "체크리스트 추가",
-  "todo.newChecklistItem": "완료 기준...",
-
   "mindtree.title": "Mind Tree",
   "mindtree.task": "Task",
   "mindtree.decision": "Decision",
@@ -110,6 +102,8 @@
   "mindtree.newTask": "새 할 일...",
   "mindtree.newDecision": "새 결정...",
   "mindtree.newNote": "새 메모...",
+  "mindtree.addChecklist": "체크리스트 추가",
+  "mindtree.newChecklistItem": "완료 기준...",
   "mindtree.smEnable": "Session Manager 활성화",
   "mindtree.smDisable": "Session Manager 비활성화",
   "mindtree.selectModel": "모델 선택",
