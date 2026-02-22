@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.2.2] - 2026-02-22
+
+### Fixed
+
+- 터미널에 포커스가 있을 때 키보드 단축키(Ctrl+T, Ctrl+화살표 등)가 전혀 동작하지 않던 버그 수정
+- 패널/탭 전환 시 커서(포커스)가 해당 터미널로 이동하지 않던 버그 수정
+
+---
+
 ## [0.2.1] - 2026-02-22
 
 ### Fixed
