@@ -11,9 +11,17 @@ import { getThemePreset } from '@renderer/themes/theme-presets'
 
 export function useTerminal(
   sessionId: string,
-  containerRef: React.RefObject<HTMLDivElement>
+  containerRef: React.RefObject<HTMLDivElement>,
+  isActive: boolean
 ) {
   const termRef = useRef<Terminal | null>(null)
+  const fitAddonRef = useRef<FitAddon | null>(null)
+  const isActiveRef = useRef(isActive)
+  isActiveRef.current = isActive
+  const resizingRef = useRef(false)
+  const resizeBufferRef = useRef('')
+  const resizeFlushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   const terminalConfig = useConfigStore((s) => s.config.terminal)
   const themeId = useConfigStore((s) => s.config.theme)
   const terminalColors = useConfigStore((s) => s.config.terminalColors)
@@ -61,23 +69,38 @@ export function useTerminal(
         cursorAccent: initBg,
       },
       scrollback: tc.scrollback,
+      windowsPty: {
+        backend: 'conpty',
+        buildNumber: 21376,
+      },
     })
 
     const fitAddon = new FitAddon()
     terminal.loadAddon(fitAddon)
     terminal.loadAddon(new WebLinksAddon())
     terminal.open(containerRef.current)
-    fitAddon.fit()
+
+    const rect = containerRef.current.getBoundingClientRect()
+    if (rect.width > 0 && rect.height > 0) {
+      fitAddon.fit()
+    }
     termRef.current = terminal
+    fitAddonRef.current = fitAddon
 
     // User input -> PTY
     const onDataDispose = terminal.onData((data) => {
       window.wsidn.terminal.input(sessionId, data)
     })
 
-    // PTY output -> terminal
+    // PTY output -> terminal (buffered during resize to avoid ConPTY double-reflow)
     const removeOutput = window.wsidn.terminal.onOutput((sid, data) => {
-      if (sid === sessionId) terminal.write(data)
+      if (sid === sessionId) {
+        if (resizingRef.current) {
+          resizeBufferRef.current += data
+        } else {
+          terminal.write(data)
+        }
+      }
     })
 
     // OSC title change — parse Claude Code activity from title + persist
@@ -96,22 +119,113 @@ export function useTerminal(
       }
     })
 
-    // Resize
-    const observer = new ResizeObserver(() => {
-      fitAddon.fit()
-      window.wsidn.terminal.resize(sessionId, terminal.cols, terminal.rows)
+    // Resize — only for ACTIVE terminal, debounced.
+    // Hidden terminals skip resize to avoid ConPTY output flood;
+    // they get a one-time fit when they become active (see isActive effect below).
+    let resizeTimer: ReturnType<typeof setTimeout> | null = null
+    const observer = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect
+      if (width === 0 || height === 0) return
+      if (!isActiveRef.current) return // skip hidden terminals
+
+      if (resizeTimer) clearTimeout(resizeTimer)
+      resizeTimer = setTimeout(() => {
+        const prevCols = terminal.cols
+        const prevRows = terminal.rows
+
+        // Cancel pending flush from previous resize cycle
+        if (resizeFlushTimerRef.current) {
+          clearTimeout(resizeFlushTimerRef.current)
+          resizeFlushTimerRef.current = null
+        }
+
+        // Start buffering ConPTY output to prevent double-reflow corruption
+        resizingRef.current = true
+        resizeBufferRef.current = ''
+
+        fitAddon.fit()
+
+        // Only notify PTY if dimensions actually changed
+        if (terminal.cols !== prevCols || terminal.rows !== prevRows) {
+          window.wsidn.terminal.resize(sessionId, terminal.cols, terminal.rows)
+        }
+
+        // Flush after ConPTY repaint completes
+        resizeFlushTimerRef.current = setTimeout(() => {
+          resizingRef.current = false
+          if (resizeBufferRef.current) {
+            terminal.write(resizeBufferRef.current)
+          }
+          resizeBufferRef.current = ''
+          resizeFlushTimerRef.current = null
+        }, 150)
+      }, 50)
     })
     observer.observe(containerRef.current)
 
     return () => {
+      if (resizeTimer) clearTimeout(resizeTimer)
+      if (resizeFlushTimerRef.current) {
+        clearTimeout(resizeFlushTimerRef.current)
+        resizeFlushTimerRef.current = null
+      }
+      // Drain any buffered output before dispose
+      resizingRef.current = false
+      if (resizeBufferRef.current) {
+        terminal.write(resizeBufferRef.current)
+        resizeBufferRef.current = ''
+      }
       removeOutput()
       onDataDispose.dispose()
       onTitleDispose.dispose()
       observer.disconnect()
       terminal.dispose()
       termRef.current = null
+      fitAddonRef.current = null
     }
   }, [sessionId])
+
+  // When this terminal becomes active, fit to current container size.
+  // This catches any resize that happened while it was hidden.
+  useEffect(() => {
+    if (!isActive) return
+    const terminal = termRef.current
+    const fitAddon = fitAddonRef.current
+    const container = containerRef.current
+    if (!terminal || !fitAddon || !container) return
+
+    const rect = container.getBoundingClientRect()
+    if (rect.width > 0 && rect.height > 0) {
+      const prevCols = terminal.cols
+      const prevRows = terminal.rows
+
+      // Cancel pending flush from previous resize cycle
+      if (resizeFlushTimerRef.current) {
+        clearTimeout(resizeFlushTimerRef.current)
+        resizeFlushTimerRef.current = null
+      }
+
+      // Start buffering ConPTY output to prevent double-reflow corruption
+      resizingRef.current = true
+      resizeBufferRef.current = ''
+
+      fitAddon.fit()
+
+      if (terminal.cols !== prevCols || terminal.rows !== prevRows) {
+        window.wsidn.terminal.resize(sessionId, terminal.cols, terminal.rows)
+      }
+
+      // Flush after ConPTY repaint completes
+      resizeFlushTimerRef.current = setTimeout(() => {
+        resizingRef.current = false
+        if (resizeBufferRef.current) {
+          terminal.write(resizeBufferRef.current)
+        }
+        resizeBufferRef.current = ''
+        resizeFlushTimerRef.current = null
+      }, 150)
+    }
+  }, [isActive, sessionId])
 
   return termRef
 }

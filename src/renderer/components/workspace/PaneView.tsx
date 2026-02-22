@@ -72,6 +72,7 @@ export default function PaneView({
   const moveSessionToPane = useSessionStore((s) => s.moveSessionToPane)
   const moveSessionToNewSplit = useSessionStore((s) => s.moveSessionToNewSplit)
   const renameSession = useSessionStore((s) => s.renameSession)
+  const claudeActivities = useSessionStore((s) => s.claudeActivities)
   const themeId = useConfigStore((s) => s.config.theme)
   const terminalColors = useConfigStore((s) => s.config.terminalColors)
   const terminalBg = terminalColors[themeId]?.background ?? getThemePreset(themeId).colors.terminalBg
@@ -158,10 +159,16 @@ export default function PaneView({
   const activeSession = paneSessions.find((s) => s.id === activeSessionId)
   const hasClaude = !!activeSession?.claudeSessionId
 
-  // Auto-toggle Mind Tree: on when Claude connects, off when disconnects
+  // Auto-toggle Mind Tree on TAB SWITCH only.
+  // Don't toggle when claudeSessionId changes on the active tab —
+  // that causes a resize during Claude's startup animation, corrupting output.
+  const prevActiveRef = useRef(activeSessionId)
   useEffect(() => {
-    setShowMindTree(hasClaude)
-  }, [hasClaude])
+    if (prevActiveRef.current !== activeSessionId) {
+      prevActiveRef.current = activeSessionId
+      setShowMindTree(hasClaude)
+    }
+  }, [activeSessionId, hasClaude])
 
   // --- Tab drag handlers ---
 
@@ -368,7 +375,7 @@ export default function PaneView({
   const tabActiveStyle = { backgroundColor: terminalBg, '--tab-bg': terminalBg } as React.CSSProperties
 
   return (
-    <div className="w-full h-full flex flex-col" onClick={onFocus}>
+    <div className="w-full h-full flex flex-col" onPointerDown={onFocus} onFocusCapture={onFocus}>
       {/* Tab bar */}
       <div
         className="flex h-[35px] bg-base shrink-0 relative"
@@ -381,6 +388,8 @@ export default function PaneView({
             const isActive = session.id === pane.activeSessionId
             const isDragged = dragging?.sessionId === session.id && dragging?.sourcePaneId === pane.id
             const isEditing = editingSessionId === session.id
+            const activity = claudeActivities[session.id]
+            const isWorking = activity?.status === 'working'
 
             if (isEditing) {
               return (
@@ -441,7 +450,10 @@ export default function PaneView({
               >
                 {renderTabDropIndicator(index, tabDropSide)}
                 {session.claudeSessionId && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-orange-400 shrink-0" />
+                  <span
+                    className="w-1.5 h-1.5 rounded-full bg-orange-400 shrink-0"
+                    style={isWorking ? { animation: 'pulse-dot 1.2s ease-in-out infinite' } : undefined}
+                  />
                 )}
                 <span className="truncate max-w-[120px]">{session.name}</span>
                 <span
@@ -596,15 +608,21 @@ export default function PaneView({
           className="flex-1 relative min-w-0"
           style={{ backgroundColor: terminalBg }}
         >
-          {paneSessions.map((session) => (
-            <div
-              key={session.id}
-              className="absolute inset-0"
-              style={{ display: session.id === pane.activeSessionId ? 'block' : 'none' }}
-            >
-              <TerminalPane sessionId={session.id} />
-            </div>
-          ))}
+          {paneSessions.map((session) => {
+            const isActiveSession = session.id === pane.activeSessionId
+            return (
+              <div
+                key={session.id}
+                className="absolute inset-0"
+                style={{
+                  visibility: isActiveSession ? 'visible' : 'hidden',
+                  zIndex: isActiveSession ? 1 : 0,
+                }}
+              >
+                <TerminalPane sessionId={session.id} isActive={isActiveSession} />
+              </div>
+            )
+          })}
 
           {/* Transparent drag-capture overlay — sits above xterm canvas to reliably receive drag events */}
           {showDragOverlay && (
