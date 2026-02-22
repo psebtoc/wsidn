@@ -17,7 +17,7 @@ export default function ChecklistItem({ item, projectId }: ChecklistItemProps) {
   const isDone = item.status === 'done'
 
   const handleToggle = () => {
-    updateItem({ id: item.id, status: isDone ? 'pending' : 'done' })
+    updateItem({ id: item.id, status: isDone ? 'pending' : 'done', projectId })
   }
 
   const handleDelete = (e: React.MouseEvent) => {

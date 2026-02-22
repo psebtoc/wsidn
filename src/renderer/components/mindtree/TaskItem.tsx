@@ -12,7 +12,7 @@ interface TaskItemProps {
   projectId: string
 }
 
-const STATUS_CYCLE: MindTreeItemStatus[] = ['pending', 'in_progress', 'done']
+const STATUS_CYCLE: MindTreeItemStatus[] = ['pending', 'in_progress', 'done', 'blocked']
 
 function statusToCheckbox(status: MindTreeItemStatus): 'unchecked' | 'indeterminate' | 'checked' {
   if (status === 'done') return 'checked'
@@ -51,14 +51,9 @@ export default function TaskItem({ item, projectId }: TaskItemProps) {
   }, [addingChecklist])
 
   const handleStatusToggle = () => {
-    // Blocked items -> pending when clicked (unblock)
-    if (item.status === 'blocked') {
-      updateItem({ id: item.id, status: 'pending' })
-      return
-    }
     const currentIdx = STATUS_CYCLE.indexOf(item.status)
     const nextStatus = STATUS_CYCLE[(currentIdx + 1) % STATUS_CYCLE.length]
-    updateItem({ id: item.id, status: nextStatus })
+    updateItem({ id: item.id, status: nextStatus, projectId })
   }
 
   const handleDelete = (e: React.MouseEvent) => {
@@ -84,7 +79,7 @@ export default function TaskItem({ item, projectId }: TaskItemProps) {
   const handleSaveEdit = () => {
     const trimmed = editText.trim()
     if (trimmed && trimmed !== item.title) {
-      updateItem({ id: item.id, title: trimmed })
+      updateItem({ id: item.id, title: trimmed, projectId })
     }
     setEditing(false)
   }
