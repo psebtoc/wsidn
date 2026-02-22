@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { createFsMemory } from '../../../test/mocks/fs-memory'
+import type { FsMemory } from '../../../test/mocks/fs-memory'
 
-const fsMock = vi.hoisted(() => createFsMemory())
+// eslint-disable-next-line no-var
+var fsMock: FsMemory
 
 vi.mock('electron', () => ({
   app: {
@@ -9,7 +10,11 @@ vi.mock('electron', () => ({
   },
 }))
 
-vi.mock('fs', () => fsMock)
+vi.mock('fs', async () => {
+  const { createFsMemory } = await import('../../../test/mocks/fs-memory')
+  fsMock = createFsMemory()
+  return fsMock
+})
 
 vi.mock('uuid', () => {
   let counter = 0
@@ -227,7 +232,6 @@ describe('mindtree-storage', () => {
 
   describe('replaceTasksAndDecisions', () => {
     it('preserves notes and replaces tasks/decisions', () => {
-      // Seed a note
       const items = [
         {
           id: 'note-1',
