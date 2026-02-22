@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.2.4] - 2026-02-22
+
+### Fixed
+
+- Mind Tree 토글 및 창 크기 조절 시 터미널 텍스트가 복사·중복되는 버그 근본 수정
+  - 원인: `windowsPty.buildNumber: 21376` 설정이 xterm.js 내부 리플로우를 활성화해, xterm과 ConPTY가 동시에 버퍼를 재작성하여 줄 중복 발생
+  - 해결: `buildNumber: 1`로 xterm 리플로우 비활성화 → ConPTY 리페인트가 단일 소스로 동작
+- 리사이즈 버퍼 플러시 방식을 고정 150ms에서 **Quiet-period** 방식으로 변경
+  - 마지막 데이터 수신 후 100ms 침묵 시 플러시 → ConPTY 리페인트 완료를 정확히 감지
+  - 실제 크기 변경 시에만 버퍼링 시작, 변경 없으면 즉시 통과
+
+---
+
 ## [0.2.3] - 2026-02-22
 
 ### Fixed
