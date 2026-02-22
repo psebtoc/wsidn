@@ -105,6 +105,21 @@ export function useTerminal(
   const resizeBufferRef = useRef('')
   const resizeFlushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Flush buffered ConPTY repaint to the terminal.
+  // Uses refs so it's safe to call from any timer/closure.
+  const flushResizeBuffer = () => {
+    if (resizeFlushTimerRef.current) {
+      clearTimeout(resizeFlushTimerRef.current)
+      resizeFlushTimerRef.current = null
+    }
+    resizingRef.current = false
+    const term = termRef.current
+    if (term && resizeBufferRef.current) {
+      term.write(resizeBufferRef.current)
+    }
+    resizeBufferRef.current = ''
+  }
+
   const terminalConfig = useConfigStore((s) => s.config.terminal)
   const themeId = useConfigStore((s) => s.config.theme)
   const terminalColors = useConfigStore((s) => s.config.terminalColors)
@@ -243,11 +258,16 @@ export function useTerminal(
       window.wsidn.terminal.input(sessionId, data)
     })
 
-    // PTY output -> terminal (buffered during resize to avoid ConPTY double-reflow)
+    // PTY output -> terminal (buffered during resize to avoid ConPTY double-reflow).
+    // Quiet-period: flush 100ms after the last byte — ensures the full ConPTY
+    // repaint burst is captured before writing, regardless of how long it takes.
     const removeOutput = window.wsidn.terminal.onOutput((sid, data) => {
       if (sid === sessionId) {
         if (resizingRef.current) {
           resizeBufferRef.current += data
+          // Reset quiet-period timer on every incoming byte
+          if (resizeFlushTimerRef.current) clearTimeout(resizeFlushTimerRef.current)
+          resizeFlushTimerRef.current = setTimeout(flushResizeBuffer, 100)
         } else {
           terminal.write(data)
         }
@@ -290,26 +310,17 @@ export function useTerminal(
           resizeFlushTimerRef.current = null
         }
 
-        // Start buffering ConPTY output to prevent double-reflow corruption
-        resizingRef.current = true
-        resizeBufferRef.current = ''
-
         fitAddon.fit()
 
-        // Only notify PTY if dimensions actually changed
+        // Only buffer + notify PTY when dimensions actually changed.
+        // Buffering on unchanged size is unnecessary and delays output.
         if (terminal.cols !== prevCols || terminal.rows !== prevRows) {
-          window.wsidn.terminal.resize(sessionId, terminal.cols, terminal.rows)
-        }
-
-        // Flush after ConPTY repaint completes
-        resizeFlushTimerRef.current = setTimeout(() => {
-          resizingRef.current = false
-          if (resizeBufferRef.current) {
-            terminal.write(resizeBufferRef.current)
-          }
+          resizingRef.current = true
           resizeBufferRef.current = ''
-          resizeFlushTimerRef.current = null
-        }, 150)
+          window.wsidn.terminal.resize(sessionId, terminal.cols, terminal.rows)
+          // Safety-net: flush after 600ms even if ConPTY keeps trickling data
+          resizeFlushTimerRef.current = setTimeout(flushResizeBuffer, 600)
+        }
       }, 50)
     })
     observer.observe(containerRef.current)
@@ -354,31 +365,19 @@ export function useTerminal(
       const prevCols = terminal.cols
       const prevRows = terminal.rows
 
-      // Cancel pending flush from previous resize cycle
       if (resizeFlushTimerRef.current) {
         clearTimeout(resizeFlushTimerRef.current)
         resizeFlushTimerRef.current = null
       }
 
-      // Start buffering ConPTY output to prevent double-reflow corruption
-      resizingRef.current = true
-      resizeBufferRef.current = ''
-
       fitAddon.fit()
 
       if (terminal.cols !== prevCols || terminal.rows !== prevRows) {
-        window.wsidn.terminal.resize(sessionId, terminal.cols, terminal.rows)
-      }
-
-      // Flush after ConPTY repaint completes
-      resizeFlushTimerRef.current = setTimeout(() => {
-        resizingRef.current = false
-        if (resizeBufferRef.current) {
-          terminal.write(resizeBufferRef.current)
-        }
+        resizingRef.current = true
         resizeBufferRef.current = ''
-        resizeFlushTimerRef.current = null
-      }, 150)
+        window.wsidn.terminal.resize(sessionId, terminal.cols, terminal.rows)
+        resizeFlushTimerRef.current = setTimeout(flushResizeBuffer, 600)
+      }
     }
   }, [isActive, sessionId])
 
