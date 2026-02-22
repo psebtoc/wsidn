@@ -182,6 +182,17 @@ export function useTerminal(
 
     terminal.open(containerRef.current)
 
+    // Handle paste via DOM paste event (covers both Ctrl+V and right-click paste).
+    // xterm.js also has an internal paste listener, so we intercept at capture phase
+    // to prevent double-paste.
+    const pasteHandler = (e: ClipboardEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      const text = e.clipboardData?.getData('text')
+      if (text) terminal.paste(text)
+    }
+    containerRef.current.addEventListener('paste', pasteHandler, true)
+
     // Ctrl+C (copy when selected, SIGINT otherwise) / Ctrl+V (paste)
     terminal.attachCustomKeyEventHandler((event: KeyboardEvent) => {
       if (event.type !== 'keydown') return true
@@ -196,9 +207,7 @@ export function useTerminal(
           return true
         }
         if (event.key === 'v') {
-          navigator.clipboard.readText().then((text) => {
-            if (text) terminal.paste(text)
-          })
+          // Prevent Ctrl+V from being sent to PTY; paste event handles the actual paste
           return false
         }
       }
@@ -304,6 +313,7 @@ export function useTerminal(
         terminal.write(resizeBufferRef.current)
         resizeBufferRef.current = ''
       }
+      containerRef.current?.removeEventListener('paste', pasteHandler, true)
       hideLinkTooltip()
       pathLinkDispose.dispose()
       removeOutput()
