@@ -1,6 +1,6 @@
 {
   "name": "wsidn",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "What Should I Do Next - Claude Code session manager with TODO tracking",
   "main": "./out/main/index.js",
   "scripts": {

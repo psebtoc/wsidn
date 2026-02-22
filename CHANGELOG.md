@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.2.3] - 2026-02-22
+
+### Fixed
+
+- 터미널 생성 시 PTY 초기 크기(80×30)가 실제 컨테이너 크기와 다를 때 Claude Code 등 전체화면 TUI가 잘못된 너비로 렌더링되는 버그 수정
+- 창 크기 조절 시 리사이즈 화면 깨짐 재발 문제 수정 (PTY 초기 크기 불일치가 연쇄 원인이었음)
+
+---
+
 ## [0.2.2] - 2026-02-22
 
 ### Fixed
