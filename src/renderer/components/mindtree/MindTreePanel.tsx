@@ -29,6 +29,7 @@ export default function MindTreePanel({ projectId, sessionId, wsidnSessionId, cw
 
   const sessionManagerEnabled = useSessionStore((s) => s.sessionManagerEnabled[wsidnSessionId] ?? false)
   const toggleSessionManager = useSessionStore((s) => s.toggleSessionManager)
+  const pendingMindTreeCreate = useSessionStore((s) => s.pendingMindTreeCreate)
 
   const config = useConfigStore((s) => s.config)
   const updateConfig = useConfigStore((s) => s.updateConfig)
@@ -284,6 +285,10 @@ export default function MindTreePanel({ projectId, sessionId, wsidnSessionId, cw
                   sessionId={sessionId}
                   collapsed={collapsedSet.has(cat)}
                   onToggleCollapse={() => toggleCollapse(cat)}
+                  forceCreate={
+                    pendingMindTreeCreate?.sessionId === wsidnSessionId &&
+                    pendingMindTreeCreate?.category === cat
+                  }
                 />
               )}
               {/* Divider after this section */}

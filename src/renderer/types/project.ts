@@ -62,6 +62,7 @@ export interface AppConfig {
   sessionManager: {
     model: 'haiku' | 'sonnet' | 'opus'
   }
+  shortcuts?: Partial<Record<string, string>>
 }
 
 // --- Mind Tree ---

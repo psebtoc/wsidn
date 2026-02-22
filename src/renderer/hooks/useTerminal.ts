@@ -8,6 +8,7 @@ import { parseClaudeTitle } from '@renderer/utils/claude-activity'
 import { useSessionStore } from '@renderer/stores/session-store'
 import { useConfigStore } from '@renderer/stores/config-store'
 import { getThemePreset } from '@renderer/themes/theme-presets'
+import { isRegisteredShortcut } from '@renderer/utils/shortcut-registry'
 
 // --- Link hover tooltip helpers ---
 let tooltipEl: HTMLDivElement | null = null
@@ -201,6 +202,9 @@ export function useTerminal(
           return false
         }
       }
+
+      // Block registered keyboard shortcuts from reaching the PTY
+      if (isRegisteredShortcut(event)) return false
 
       return true
     })

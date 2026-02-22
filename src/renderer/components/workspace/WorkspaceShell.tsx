@@ -12,6 +12,7 @@ import ProjectSettingsPanel from '@renderer/components/settings/ProjectSettingsP
 import { calculateBounds, collectDividers } from '@renderer/utils/split-utils'
 import type { SplitDirection } from '@renderer/types/project'
 import type { PaneBounds, CalculateBoundsOptions } from '@renderer/utils/split-utils'
+import { useKeyboardShortcuts } from '@renderer/hooks/useKeyboardShortcuts'
 
 
 interface DragState {
@@ -174,6 +175,8 @@ export default function WorkspaceShell({ projectId }: WorkspaceShellProps) {
       window.removeEventListener('mouseup', handleMouseUp)
     }
   }, [dragState, updateSplitRatio])
+
+  useKeyboardShortcuts(projectId, project?.path ?? '')
 
   if (!project) {
     return null

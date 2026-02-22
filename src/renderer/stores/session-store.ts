@@ -123,6 +123,14 @@ interface SessionState {
   resumeHistory: ResumeHistoryEntry[]
   // Session Manager enabled state (runtime only, per WSIDN session UUID)
   sessionManagerEnabled: Record<string, boolean>
+  // Mind Tree panel visibility per pane (runtime only)
+  showMindTreeByPane: Record<string, boolean>
+  setShowMindTree: (paneId: string, show: boolean) => void
+  toggleMindTree: (paneId: string) => void
+  // Mind Tree item creation trigger (runtime only)
+  pendingMindTreeCreate: { sessionId: string; category: 'task' | 'decision' } | null
+  triggerMindTreeCreate: (sessionId: string, category: 'task' | 'decision') => void
+  clearMindTreeCreate: () => void
 
   loadSessions: (projectId: string, cwd: string) => Promise<void>
 
@@ -175,6 +183,26 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   minimizedPaneIds: [],
   resumeHistory: [],
   sessionManagerEnabled: {},
+  showMindTreeByPane: {},
+  pendingMindTreeCreate: null,
+
+  setShowMindTree: (paneId, show) => {
+    set((s) => ({ showMindTreeByPane: { ...s.showMindTreeByPane, [paneId]: show } }))
+  },
+
+  toggleMindTree: (paneId) => {
+    set((s) => ({
+      showMindTreeByPane: { ...s.showMindTreeByPane, [paneId]: !(s.showMindTreeByPane[paneId] ?? false) },
+    }))
+  },
+
+  triggerMindTreeCreate: (sessionId, category) => {
+    set({ pendingMindTreeCreate: { sessionId, category } })
+  },
+
+  clearMindTreeCreate: () => {
+    set({ pendingMindTreeCreate: null })
+  },
 
   loadSessions: async (projectId: string, cwd: string) => {
     _currentProjectId = projectId

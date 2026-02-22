@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ChevronRight, Plus } from 'lucide-react'
 import type { MindTreeCategory, MindTreeItem } from '@renderer/types/project'
+import { useSessionStore } from '@renderer/stores/session-store'
 import TaskItem from './TaskItem'
 import DecisionItem from './DecisionItem'
 import CreateInput from './CreateInput'
@@ -14,6 +15,7 @@ interface MindTreeSectionProps {
   sessionId: string
   collapsed: boolean
   onToggleCollapse: () => void
+  forceCreate?: boolean
 }
 
 const SECTION_LABELS: Record<MindTreeCategory, string> = {
@@ -35,9 +37,18 @@ export default function MindTreeSection({
   sessionId,
   collapsed,
   onToggleCollapse,
+  forceCreate,
 }: MindTreeSectionProps) {
   const { t } = useTranslation()
   const [showCreate, setShowCreate] = useState(false)
+  const clearMindTreeCreate = useSessionStore((s) => s.clearMindTreeCreate)
+
+  useEffect(() => {
+    if (forceCreate) {
+      setShowCreate(true)
+      if (collapsed) onToggleCollapse()
+    }
+  }, [forceCreate]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const rootItems = items.filter((item) => item.parentId === null)
 
@@ -91,7 +102,10 @@ export default function MindTreeSection({
               projectId={projectId}
               sessionId={sessionId}
               category={category}
-              onDone={() => setShowCreate(false)}
+              onDone={() => {
+                setShowCreate(false)
+                clearMindTreeCreate()
+              }}
             />
           )}
         </div>

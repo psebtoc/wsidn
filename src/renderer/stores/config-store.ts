@@ -3,6 +3,7 @@ import type { AppConfig } from '@renderer/types/project'
 import { unwrapIpc } from '@renderer/types/ipc'
 import { getThemePreset, getAccentColor, hexToRgb } from '@renderer/themes/theme-presets'
 import i18n from '@renderer/i18n'
+import { updateShortcutRegistry } from '@renderer/utils/shortcut-registry'
 
 const DEFAULT_CONFIG: AppConfig = {
   theme: 'default-dark',
@@ -20,6 +21,7 @@ const DEFAULT_CONFIG: AppConfig = {
   sessionManager: {
     model: 'haiku',
   },
+  shortcuts: {},
 }
 
 function applyTheme(themeId: string, accentColorId?: string | null): void {
@@ -60,11 +62,15 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         ...config,
         terminal: { ...DEFAULT_CONFIG.terminal, ...config.terminal },
         sessionManager: { ...DEFAULT_CONFIG.sessionManager, ...config.sessionManager },
+        shortcuts: { ...DEFAULT_CONFIG.shortcuts, ...config.shortcuts },
       }
       set({ config: merged, loaded: true })
       applyTheme(merged.theme, merged.accentColor)
       if (merged.language && merged.language !== i18n.language) {
         i18n.changeLanguage(merged.language)
+      }
+      if (merged.shortcuts) {
+        updateShortcutRegistry(merged.shortcuts as Record<string, string>)
       }
     } catch {
       set({ loaded: true })
@@ -85,6 +91,9 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
     }
     if (patch.language && patch.language !== i18n.language) {
       i18n.changeLanguage(patch.language)
+    }
+    if (patch.shortcuts) {
+      updateShortcutRegistry(patch.shortcuts as Record<string, string>)
     }
   },
 }))

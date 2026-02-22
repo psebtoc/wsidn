@@ -7,8 +7,9 @@ import Button from '@renderer/components/ui/Button'
 import GeneralTab from './tabs/GeneralTab'
 import TerminalTab from './tabs/TerminalTab'
 import AppearanceTab from './tabs/AppearanceTab'
+import KeyboardTab from './tabs/KeyboardTab'
 
-type SettingsTab = 'general' | 'terminal' | 'appearance'
+type SettingsTab = 'general' | 'terminal' | 'appearance' | 'keyboard'
 
 interface AppSettingsModalProps {
   open: boolean
@@ -27,6 +28,7 @@ export default function AppSettingsModal({ open, onClose }: AppSettingsModalProp
   const [theme, setTheme] = useState(config.theme)
   const [accentColor, setAccentColor] = useState<string | null>(config.accentColor)
   const [terminalColors, setTerminalColors] = useState<Record<string, TerminalColorOverride>>(config.terminalColors)
+  const [shortcuts, setShortcuts] = useState<Record<string, string>>((config.shortcuts ?? {}) as Record<string, string>)
   const [saving, setSaving] = useState(false)
 
   // Store originals for cancel revert
@@ -42,6 +44,7 @@ export default function AppSettingsModal({ open, onClose }: AppSettingsModalProp
       setTheme(config.theme)
       setAccentColor(config.accentColor)
       setTerminalColors(config.terminalColors)
+      setShortcuts((config.shortcuts ?? {}) as Record<string, string>)
       setActiveTab('general')
       originalThemeRef.current = config.theme
       originalAccentRef.current = config.accentColor
@@ -77,6 +80,7 @@ export default function AppSettingsModal({ open, onClose }: AppSettingsModalProp
         terminalColors,
         terminal,
         theme,
+        shortcuts,
       }
       await updateConfig(patch)
       onClose()
@@ -114,6 +118,7 @@ export default function AppSettingsModal({ open, onClose }: AppSettingsModalProp
     { id: 'general', label: t('settings.tabs.general') },
     { id: 'terminal', label: t('settings.tabs.terminal') },
     { id: 'appearance', label: t('settings.tabs.appearance') },
+    { id: 'keyboard', label: t('settings.tabs.keyboard') },
   ]
 
   return (
@@ -166,6 +171,12 @@ export default function AppSettingsModal({ open, onClose }: AppSettingsModalProp
             selectedAccent={accentColor}
             onSelectTheme={handleThemeChange}
             onSelectAccent={handleAccentChange}
+          />
+        )}
+        {activeTab === 'keyboard' && (
+          <KeyboardTab
+            shortcuts={shortcuts}
+            onShortcutsChange={setShortcuts}
           />
         )}
       </div>

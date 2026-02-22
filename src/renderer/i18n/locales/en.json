@@ -130,5 +130,20 @@
   "titleBar.backToProjects": "Back to projects",
 
   "terminal.linkTooltip": "Ctrl+Click to open link",
-  "terminal.pathTooltip": "Ctrl+Click to open path"
+  "terminal.pathTooltip": "Ctrl+Click to open path",
+
+  "settings.tabs.keyboard": "Keyboard",
+
+  "shortcuts.create-session": "New Session",
+  "shortcuts.switch-tab-next": "Next Tab",
+  "shortcuts.switch-tab-prev": "Previous Tab",
+  "shortcuts.switch-pane-next": "Next Pane",
+  "shortcuts.switch-pane-prev": "Previous Pane",
+  "shortcuts.minimize-pane": "Minimize Pane",
+  "shortcuts.toggle-mindtree": "Toggle Mind Tree",
+  "shortcuts.create-task": "Add Task",
+  "shortcuts.create-decision": "Add Decision",
+  "shortcuts.resetToDefaults": "Reset to Defaults",
+  "shortcuts.pressKey": "Press a key...",
+  "shortcuts.escToCancel": "Press Esc to cancel"
 }
