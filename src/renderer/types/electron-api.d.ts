@@ -93,6 +93,10 @@ export interface WsidnAPI {
     ) => () => void
     onProcessing: (callback: (payload: { wsidnSessionId: string }) => void) => () => void
   }
+  shell: {
+    openExternal: (url: string) => Promise<void>
+    openPath: (path: string) => Promise<void>
+  }
   window: {
     minimize: () => void
     maximize: () => void

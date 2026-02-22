@@ -127,5 +127,8 @@
   "ribbon.templates": "Templates",
   "ribbon.projectSettings": "Project Settings",
 
-  "titleBar.backToProjects": "Back to projects"
+  "titleBar.backToProjects": "Back to projects",
+
+  "terminal.linkTooltip": "Ctrl+Click to open link",
+  "terminal.pathTooltip": "Ctrl+Click to open path"
 }

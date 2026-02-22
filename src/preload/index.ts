@@ -148,6 +148,11 @@ contextBridge.exposeInMainWorld('wsidn', {
     },
   },
 
+  shell: {
+    openExternal: (url: string) => ipcRenderer.invoke('shell:openExternal', { url }),
+    openPath: (path: string) => ipcRenderer.invoke('shell:openPath', { path }),
+  },
+
   window: {
     minimize: () => ipcRenderer.send('window:minimize'),
     maximize: () => ipcRenderer.send('window:maximize'),

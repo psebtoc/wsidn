@@ -127,5 +127,8 @@
   "ribbon.templates": "템플릿",
   "ribbon.projectSettings": "프로젝트 설정",
 
-  "titleBar.backToProjects": "프로젝트 목록으로"
+  "titleBar.backToProjects": "프로젝트 목록으로",
+
+  "terminal.linkTooltip": "Ctrl+Click으로 링크 열기",
+  "terminal.pathTooltip": "Ctrl+Click으로 경로 열기"
 }

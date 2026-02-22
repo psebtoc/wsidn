@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
-import { Terminal } from '@xterm/xterm'
+import { useTranslation } from 'react-i18next'
+import { Terminal, ILinkProvider, ILink } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import { WebLinksAddon } from '@xterm/addon-web-links'
 import '@xterm/xterm/css/xterm.css'
@@ -8,6 +9,79 @@ import { useSessionStore } from '@renderer/stores/session-store'
 import { useConfigStore } from '@renderer/stores/config-store'
 import { getThemePreset } from '@renderer/themes/theme-presets'
 
+// --- Link hover tooltip helpers ---
+let tooltipEl: HTMLDivElement | null = null
+
+function showLinkTooltip(event: MouseEvent, text: string): void {
+  hideLinkTooltip()
+  const el = document.createElement('div')
+  el.className = 'xterm-hover'
+  el.textContent = text
+  Object.assign(el.style, {
+    position: 'fixed',
+    left: `${event.clientX + 4}px`,
+    top: `${event.clientY - 28}px`,
+    background: '#252526',
+    color: '#cccccc',
+    padding: '2px 8px',
+    borderRadius: '3px',
+    border: '1px solid #454545',
+    fontSize: '12px',
+    fontFamily: 'system-ui, sans-serif',
+    pointerEvents: 'none',
+    zIndex: '10000',
+    whiteSpace: 'nowrap',
+  })
+  document.body.appendChild(el)
+  tooltipEl = el
+}
+
+function hideLinkTooltip(): void {
+  if (tooltipEl) {
+    tooltipEl.remove()
+    tooltipEl = null
+  }
+}
+
+// Windows absolute path: C:\... or C:/...
+const WIN_PATH_RE = /[A-Za-z]:[/\\][^\s"'`<>|*?]+/g
+
+/** Creates a link provider that detects local file paths in terminal output */
+function createPathLinkProvider(
+  terminal: Terminal,
+  onHover: (event: MouseEvent) => void,
+  onLeave: () => void
+): ILinkProvider {
+  return {
+    provideLinks(y: number, callback: (links: ILink[] | undefined) => void) {
+      // y from provideLinks is 1-based buffer line; getLine takes 0-based index
+      const line = terminal.buffer.active.getLine(y - 1)
+      if (!line) { callback(undefined); return }
+
+      const text = line.translateToString()
+      const links: ILink[] = []
+      let match: RegExpExecArray | null
+      WIN_PATH_RE.lastIndex = 0
+      while ((match = WIN_PATH_RE.exec(text)) !== null) {
+        const startX = match.index
+        const path = match[0]
+        links.push({
+          range: {
+            start: { x: startX + 1, y },
+            end: { x: startX + path.length + 1, y },
+          },
+          text: path,
+          activate(event: MouseEvent) {
+            if (event.ctrlKey) window.wsidn.shell.openPath(path)
+          },
+          hover(event: MouseEvent) { onHover(event) },
+          leave() { onLeave() },
+        })
+      }
+      callback(links.length > 0 ? links : undefined)
+    },
+  }
+}
 
 export function useTerminal(
   sessionId: string,
@@ -16,6 +90,7 @@ export function useTerminal(
 ) {
   const termRef = useRef<Terminal | null>(null)
   const fitAddonRef = useRef<FitAddon | null>(null)
+  const { t } = useTranslation()
   const isActiveRef = useRef(isActive)
   isActiveRef.current = isActive
   const resizingRef = useRef(false)
@@ -44,6 +119,7 @@ export function useTerminal(
       foreground: fg,
       cursor: fg,
       cursorAccent: bg,
+      selectionBackground: '#ffffff40',
     }
   }, [terminalConfig, themeId, terminalColors])
 
@@ -67,6 +143,7 @@ export function useTerminal(
         foreground: initFg,
         cursor: initFg,
         cursorAccent: initBg,
+        selectionBackground: '#ffffff40',
       },
       scrollback: tc.scrollback,
       windowsPty: {
@@ -77,8 +154,56 @@ export function useTerminal(
 
     const fitAddon = new FitAddon()
     terminal.loadAddon(fitAddon)
-    terminal.loadAddon(new WebLinksAddon())
+    terminal.loadAddon(
+      new WebLinksAddon(
+        (event, uri) => {
+          if (event.ctrlKey) window.wsidn.shell.openExternal(uri)
+        },
+        {
+          hover: (event) => {
+            showLinkTooltip(event, t('terminal.linkTooltip'))
+          },
+          leave: () => {
+            hideLinkTooltip()
+          },
+        }
+      )
+    )
+
+    // Local file path link provider (Windows paths like C:\...)
+    const pathLinkDispose = terminal.registerLinkProvider(
+      createPathLinkProvider(
+        terminal,
+        (event) => showLinkTooltip(event, t('terminal.pathTooltip')),
+        () => hideLinkTooltip()
+      )
+    )
+
     terminal.open(containerRef.current)
+
+    // Ctrl+C (copy when selected, SIGINT otherwise) / Ctrl+V (paste)
+    terminal.attachCustomKeyEventHandler((event: KeyboardEvent) => {
+      if (event.type !== 'keydown') return true
+
+      if (event.ctrlKey && !event.shiftKey && !event.altKey) {
+        if (event.key === 'c') {
+          if (terminal.hasSelection()) {
+            navigator.clipboard.writeText(terminal.getSelection())
+            terminal.clearSelection()
+            return false
+          }
+          return true
+        }
+        if (event.key === 'v') {
+          navigator.clipboard.readText().then((text) => {
+            if (text) terminal.paste(text)
+          })
+          return false
+        }
+      }
+
+      return true
+    })
 
     const rect = containerRef.current.getBoundingClientRect()
     if (rect.width > 0 && rect.height > 0) {
@@ -175,6 +300,8 @@ export function useTerminal(
         terminal.write(resizeBufferRef.current)
         resizeBufferRef.current = ''
       }
+      hideLinkTooltip()
+      pathLinkDispose.dispose()
       removeOutput()
       onDataDispose.dispose()
       onTitleDispose.dispose()

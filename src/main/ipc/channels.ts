@@ -51,6 +51,10 @@ export const IPC_CHANNELS = {
   SESSION_MANAGER_UPDATED: 'sessionManager:updated',
   SESSION_MANAGER_PROCESSING: 'sessionManager:processing',
 
+  // Shell
+  SHELL_OPEN_EXTERNAL: 'shell:openExternal',
+  SHELL_OPEN_PATH: 'shell:openPath',
+
   // Window
   WINDOW_MINIMIZE: 'window:minimize',
   WINDOW_MAXIMIZE: 'window:maximize',
