@@ -330,6 +330,15 @@ export function useTerminal(
     })
     observer.observe(containerRef.current)
 
+    // When the window is restored from minimized state the xterm canvas is not
+    // automatically repainted. Force a full refresh on visibility restore.
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && isActiveRef.current) {
+        terminal.refresh(0, terminal.rows - 1)
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
     return () => {
       if (resizeTimer) clearTimeout(resizeTimer)
       if (resizeFlushTimerRef.current) {
@@ -342,6 +351,7 @@ export function useTerminal(
         terminal.write(resizeBufferRef.current)
         resizeBufferRef.current = ''
       }
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
       containerRef.current?.removeEventListener('paste', pasteHandler, true)
       hideLinkTooltip()
       pathLinkDispose.dispose()

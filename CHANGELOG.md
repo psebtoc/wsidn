@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.2.5] - 2026-02-23
+
+### Fixed
+
+- 창 최소화 후 복원 시 터미널이 빈 화면으로 보이는 버그 수정
+  - `visibilitychange` 이벤트를 감지해 복원 시 xterm 캔버스 강제 리페인트
+
+---
+
 ## [0.2.4] - 2026-02-22
 
 ### Fixed
