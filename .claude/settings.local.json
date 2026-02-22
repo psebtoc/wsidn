@@ -12,7 +12,9 @@
       "Bash(npx tsc:*)",
       "Bash(npx electron-vite:*)",
       "WebSearch",
-      "Bash(git status:*)"
+      "Bash(git status:*)",
+      "Bash(cd /c/pyosechang/projects/wsidn && pnpm test -- src/renderer/utils/split-utils.test.ts src/renderer/utils/claude-activity.test.ts src/renderer/utils/format-time.test.ts src/renderer/types/ipc.test.ts 2>&1)",
+      "Bash(cd /c/pyosechang/projects/wsidn && npx vitest run src/main/storage/ 2>&1)"
     ]
   }
 }

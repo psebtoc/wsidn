@@ -146,6 +146,36 @@ When adding new IPC channels, update all 5 layers:
 
 **Important**: preload/main changes require full `pnpm dev` restart (no HMR).
 
+## Release Notes
+
+### CHANGELOG.md 작성 규칙
+
+릴리즈 시 `CHANGELOG.md`를 업데이트한다. [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 형식을 따른다.
+
+**섹션 구성** (해당하는 것만 포함):
+- `Added` — 새로운 기능
+- `Fixed` — 버그 수정
+- `Refactored` — 동작 변화 없는 내부 구조 개선
+- `Performance` — 성능 개선
+- `Removed` — 제거된 기능
+
+**버전 헤더 형식**:
+```markdown
+## [X.Y.Z] - YYYY-MM-DD
+```
+
+**작성 기준**:
+- `chore:`, `test:`, merge commit은 CHANGELOG에 포함하지 않는다
+- `feat:` → Added, `fix:` → Fixed, `refactor:` → Refactored, `perf:` → Performance
+- 항목은 기술적 구현보다 사용자 관점의 변화를 설명한다
+- 새 버전 섹션은 파일 상단(기존 최신 버전 위)에 추가한다
+
+**릴리즈 절차**:
+1. `CHANGELOG.md` 업데이트
+2. `package.json` 버전 번프 (`pnpm version patch|minor|major`)
+3. `git tag vX.Y.Z` 생성
+4. `pnpm build` 실행
+
 ## Tech Stack
 
 - **Runtime**: Electron 33 + Node

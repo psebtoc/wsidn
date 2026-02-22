@@ -230,6 +230,10 @@ export function useTerminal(
     const rect = containerRef.current.getBoundingClientRect()
     if (rect.width > 0 && rect.height > 0) {
       fitAddon.fit()
+      // Notify PTY of actual initial size (PTY spawns at 80×30 by default).
+      // Without this, Claude Code and other full-screen TUIs render for the
+      // wrong width until the first window resize triggers a PTY resize.
+      window.wsidn.terminal.resize(sessionId, terminal.cols, terminal.rows)
     }
     termRef.current = terminal
     fitAddonRef.current = fitAddon
