@@ -1,6 +1,13 @@
 import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Terminal, ILinkProvider, ILink } from '@xterm/xterm'
+
+// Module-level registry: sessionId → Terminal instance
+const _terminalRegistry = new Map<string, Terminal>()
+
+export function focusTerminal(sessionId: string): void {
+  _terminalRegistry.get(sessionId)?.focus()
+}
 import { FitAddon } from '@xterm/addon-fit'
 import { WebLinksAddon } from '@xterm/addon-web-links'
 import '@xterm/xterm/css/xterm.css'
@@ -218,6 +225,8 @@ export function useTerminal(
       return true
     })
 
+    _terminalRegistry.set(sessionId, terminal)
+
     const rect = containerRef.current.getBoundingClientRect()
     if (rect.width > 0 && rect.height > 0) {
       fitAddon.fit()
@@ -320,6 +329,7 @@ export function useTerminal(
       onDataDispose.dispose()
       onTitleDispose.dispose()
       observer.disconnect()
+      _terminalRegistry.delete(sessionId)
       terminal.dispose()
       termRef.current = null
       fitAddonRef.current = null

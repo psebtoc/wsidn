@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useSessionStore } from '@renderer/stores/session-store'
 import { matchAction } from '@renderer/utils/shortcut-registry'
 import { getPaneIds } from '@renderer/utils/split-utils'
+import { focusTerminal } from '@renderer/hooks/useTerminal'
 
 export function useKeyboardShortcuts(projectId: string, cwd: string): void {
   useEffect(() => {
@@ -10,7 +11,7 @@ export function useKeyboardShortcuts(projectId: string, cwd: string): void {
       const target = e.target as HTMLElement
       if (
         target.tagName === 'INPUT' ||
-        target.tagName === 'TEXTAREA' ||
+        (target.tagName === 'TEXTAREA' && !target.classList.contains('xterm-helper-textarea')) ||
         target.contentEditable === 'true'
       ) {
         return
@@ -37,7 +38,9 @@ export function useKeyboardShortcuts(projectId: string, cwd: string): void {
         const idx = pane.sessionIds.indexOf(pane.activeSessionId ?? '')
         const delta = isTabNext ? 1 : -1
         const nextIdx = (idx + delta + pane.sessionIds.length) % pane.sessionIds.length
-        store.setActiveSessionInPane(focusedPaneId, pane.sessionIds[nextIdx])
+        const nextSessionId = pane.sessionIds[nextIdx]
+        store.setActiveSessionInPane(focusedPaneId, nextSessionId)
+        requestAnimationFrame(() => focusTerminal(nextSessionId))
         return
       }
 
@@ -52,7 +55,10 @@ export function useKeyboardShortcuts(projectId: string, cwd: string): void {
         const idx = visibleIds.indexOf(focusedPaneId ?? '')
         const delta = isPaneNext ? 1 : -1
         const nextIdx = (idx + delta + visibleIds.length) % visibleIds.length
-        store.focusPane(visibleIds[nextIdx])
+        const nextPaneId = visibleIds[nextIdx]
+        store.focusPane(nextPaneId)
+        const targetPane = panes.find((p) => p.id === nextPaneId)
+        if (targetPane?.activeSessionId) focusTerminal(targetPane.activeSessionId)
         return
       }
 
