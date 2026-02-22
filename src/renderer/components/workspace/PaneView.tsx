@@ -48,7 +48,8 @@ export default function PaneView({
   resumeHistory = []
 }: PaneViewProps) {
   const { t } = useTranslation()
-  const [showMindTree, setShowMindTree] = useState(false)
+  const showMindTree = useSessionStore((s) => s.showMindTreeByPane[pane.id] ?? false)
+  const setShowMindTreeInStore = useSessionStore((s) => s.setShowMindTree)
   const [tabDropIndex, setTabDropIndex] = useState<number | null>(null)
   const [tabDropSide, setTabDropSide] = useState<'left' | 'right'>('left')
   const [dropEdge, setDropEdge] = useState<DropEdge>(null)
@@ -166,9 +167,9 @@ export default function PaneView({
   useEffect(() => {
     if (prevActiveRef.current !== activeSessionId) {
       prevActiveRef.current = activeSessionId
-      setShowMindTree(hasClaude)
+      setShowMindTreeInStore(pane.id, hasClaude)
     }
-  }, [activeSessionId, hasClaude])
+  }, [activeSessionId, hasClaude, pane.id, setShowMindTreeInStore])
 
   // --- Tab drag handlers ---
 
@@ -541,7 +542,7 @@ export default function PaneView({
               disabled={!hasClaude}
               onClick={(e) => {
                 e.stopPropagation()
-                setShowMindTree((v) => !v)
+                setShowMindTreeInStore(pane.id, !showMindTree)
               }}
               className={`flex items-center justify-center w-5 h-5 rounded transition-colors ${
                 !hasClaude

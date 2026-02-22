@@ -130,5 +130,20 @@
   "titleBar.backToProjects": "프로젝트 목록으로",
 
   "terminal.linkTooltip": "Ctrl+Click으로 링크 열기",
-  "terminal.pathTooltip": "Ctrl+Click으로 경로 열기"
+  "terminal.pathTooltip": "Ctrl+Click으로 경로 열기",
+
+  "settings.tabs.keyboard": "단축키",
+
+  "shortcuts.create-session": "새 세션 생성",
+  "shortcuts.switch-tab-next": "다음 탭",
+  "shortcuts.switch-tab-prev": "이전 탭",
+  "shortcuts.switch-pane-next": "다음 패널",
+  "shortcuts.switch-pane-prev": "이전 패널",
+  "shortcuts.minimize-pane": "패널 최소화",
+  "shortcuts.toggle-mindtree": "Mind Tree 토글",
+  "shortcuts.create-task": "할 일 추가",
+  "shortcuts.create-decision": "결정 추가",
+  "shortcuts.resetToDefaults": "기본값으로 초기화",
+  "shortcuts.pressKey": "키를 누르세요...",
+  "shortcuts.escToCancel": "Esc로 취소"
 }
